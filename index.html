@@ -600,10 +600,28 @@
         setStatus('error', 'Geolocation not supported by this browser');
         loadingOverlay.classList.remove('visible');
       } else {
-        loadingOverlay.classList.add('visible');
-        loadingMsg.textContent = 'Requesting GPS access...';
-        setStatus('waiting', 'Requesting location...');
-        startWatching();
+        // Check if permission was previously denied
+        var permissionChecked = false;
+        if (navigator.permissions && navigator.permissions.query) {
+          navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+            if (result.state === 'denied') {
+              permissionChecked = true;
+              loadingOverlay.classList.remove('visible');
+              setStatus('error', 'Location access blocked');
+              permissionDenied = true;
+              showPermissionModal();
+            }
+          }).catch(function() {});
+        }
+        // Only start watching if permission wasn't already denied
+        setTimeout(function() {
+          if (!permissionChecked && !permissionDenied) {
+            loadingOverlay.classList.add('visible');
+            loadingMsg.textContent = 'Requesting GPS access...';
+            setStatus('waiting', 'Requesting location...');
+            startWatching();
+          }
+        }, 100);
       }
 
       window.addEventListener('beforeunload', function () {
