@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RACS GPS Tracker — BETech</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: Arial, sans-serif; background: #f3f6f9; color: #1f2937; }
+
+    /* ── RACS Demo-style Banner ── */
+    .header {
+      background: white;
+      padding: 14px 18px;
+      border-bottom: 4px solid #0b6f9e;
+      flex-shrink: 0;
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      max-width: 100%;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .logo { width: 88px; flex: 0 0 auto; }
+
+    .brand-text { line-height: 1.08; min-width: 0; }
+    .brand-mcgi {
+      color: #0b4f9c;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: clamp(18px, 4.2vw, 34px);
+      font-weight: bold;
+      letter-spacing: 0;
+    }
+    .brand-sub {
+      color: #9a4f16;
+      font-family: Arial Black, Impact, Arial, sans-serif;
+      font-size: clamp(11px, 2.5vw, 19px);
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #map {
+      flex: 1;
+      width: 100%;
+      z-index: 1;
+    }
+
+    /* ── Status Panel ── */
+    .status-panel {
+      background: white;
+      border-top: 2px solid #e0e6ed;
+      padding: 10px 16px 14px;
+      flex-shrink: 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .status-dot.active { background: #27ae60; box-shadow: 0 0 6px #27ae60; }
+    .status-dot.waiting { background: #f39c12; animation: pulse 1.5s infinite; }
+    .status-dot.error { background: #e74c3c; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      background: #ecf0f1;
+      color: #7f8c8d;
+    }
+    .status-badge.active { background: #e8f8f0; color: #27ae60; }
+
+    .coords-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .coord-cell {
+      background: #f8f9fb;
+      border: 1px solid #e8ecf1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      text-align: center;
+    }
+    .coord-cell .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: #95a5a6;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .coord-cell .value {
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      color: #2c3e50;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11,111,158,0.92);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Recenter button ── */
+    .btn-recenter {
+      position: absolute;
+      bottom: 165px;
+      right: 12px;
+      z-index: 1000;
+      background: white;
+      color: #2c3e50;
+      border: 1px solid #d5dbe3;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      opacity: 0.85;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .btn-recenter:hover { opacity: 1; box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
+
+    /* ── Permission Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 14px;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 24px 22px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      text-align: center;
+      position: relative;
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0b4f71;
+      margin-bottom: 8px;
+    }
+    .modal-desc {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .modal-steps {
+      text-align: left;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+    .modal-steps .step {
+      font-size: 13px;
+      color: #334155;
+      padding: 4px 0;
+      display: flex;
+      gap: 8px;
+    }
+    .modal-steps .step-num {
+      background: #0b6f9e;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .modal-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    .modal-btn-primary {
+      background: #0b6f9e;
+      color: white;
+    }
+    .modal-btn-primary:hover { background: #084d70; }
+    .modal-btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .modal-btn-secondary:hover { background: #cbd5e1; }
+
+    /* ── Attribution ── */
+    .attribution {
+      position: absolute;
+      bottom: 150px;
+      left: 0; right: 0;
+      z-index: 1000;
+      text-align: center;
+      font-size: 10px;
+      color: #64748b;
+      background: rgba(255,255,255,0.85);
+      padding: 3px 10px;
+    }
+    .attribution a { color: #0b6f9e; text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .header { padding: 12px 10px; }
+      .brand-lockup { gap: 10px; }
+      .logo { width: 68px; }
+      .status-panel { padding: 8px 10px 10px; }
+      .coords-grid { grid-template-columns: 1fr 1fr; }
+      .coord-cell { padding: 4px 6px; }
+      .coord-cell .value { font-size: 12px; }
+      .btn-recenter { bottom: 155px; right: 8px; padding: 8px 10px; font-size: 16px; }
+      .attribution { bottom: 140px; }
+      .modal-box { padding: 22px 16px 18px; }
+    }
+    @media (max-height: 600px) {
+      .status-panel { padding: 6px 10px 8px; }
+      .coords-grid { grid-template-columns: 1fr 1fr; }
+      .header { padding: 8px 10px; }
+      .logo { width: 54px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── RACS-style Header ── -->
+  <header class="header">
+    <div class="brand-lockup">
+      <img src="/mcgi_racs_logo.png" class="logo" alt="MCGI RACS Logo">
+      <div class="brand-text">
+        <div class="brand-mcgi">Members Church of God International</div>
+        <div class="brand-sub">RACS GPS TRACKER — LIVE MONITORING</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Map ── -->
+  <div id="map"></div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <span id="loadingMsg">Acquiring GPS position...</span>
+  </div>
+
+  <div class="btn-recenter" id="btnRecenter" title="Re-center on your location">⟐</div>
+
+  <div class="attribution">
+    &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors &bull; BETech &bull; MCGI
+  </div>
+
+  <!-- ── Status Panel ── -->
+  <div class="status-panel" id="statusPanel">
+    <div class="status-row">
+      <div class="status-indicator">
+        <span class="status-dot waiting" id="statusDot"></span>
+        <span id="statusText">Waiting for GPS...</span>
+      </div>
+      <span class="status-badge" id="accuracyBadge">± —</span>
+    </div>
+    <div class="coords-grid">
+      <div class="coord-cell">
+        <div class="label">Latitude</div>
+        <div class="value" id="latValue">—</div>
+      </div>
+      <div class="coord-cell">
+        <div class="label">Longitude</div>
+        <div class="value" id="lngValue">—</div>
+      </div>
+      <div class="coord-cell">
+        <div class="label">Altitude</div>
+        <div class="value" id="altValue">—</div>
+      </div>
+      <div class="coord-cell">
+        <div class="label">Speed</div>
+        <div class="value" id="speedValue">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Permission Denied Modal ── -->
+  <div class="modal-overlay" id="permissionModal">
+    <div class="modal-box">
+      <div class="modal-icon">📍</div>
+      <div class="modal-title">Location Access Required</div>
+      <p class="modal-desc">RACS GPS Tracker needs your device location to show your position on the map.</p>
+      <div class="modal-steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <span><strong>Tap the lock icon</strong> or <strong>site settings</strong> in your browser's address bar</span>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span>Change <strong>Location</strong> from <em>Block</em> to <em>Allow</em></span>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span>Refresh this page and tap <strong>Allow</strong> when prompted</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:4px;">
+        <em>iPhone: Settings → Safari → Location → While Using</em>
+      </p>
+      <button class="modal-btn modal-btn-primary" id="retryBtn">🔄 Try Again</button>
+      <button class="modal-btn modal-btn-secondary" id="dismissModalBtn">Use Map Without GPS</button>
+    </div>
+  </div>
+
+</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* ── Map ── */
+      const map = L.map('map', {
+        zoomControl: true,
+        attributionControl: false,
+      }).setView([14.5, 121.0], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap',
+      }).addTo(map);
+
+      /* ── DOM refs ── */
+      const statusText   = document.getElementById('statusText');
+      const statusDot    = document.getElementById('statusDot');
+      const latValue     = document.getElementById('latValue');
+      const lngValue     = document.getElementById('lngValue');
+      const altValue     = document.getElementById('altValue');
+      const speedValue   = document.getElementById('speedValue');
+      const accuracyBadge = document.getElementById('accuracyBadge');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const loadingMsg   = document.getElementById('loadingMsg');
+      const btnRecenter  = document.getElementById('btnRecenter');
+      const modal        = document.getElementById('permissionModal');
+      const retryBtn     = document.getElementById('retryBtn');
+      const dismissBtn   = document.getElementById('dismissModalBtn');
+
+      /* ── State ── */
+      let userMarker = null;
+      let accuracyCircle = null;
+      let lastPosition = null;
+      let mapFollowsUser = true;
+      let permissionDenied = false;
+
+      function setStatus(type, msg) {
+        statusDot.className = 'status-dot ' + type;
+        statusText.textContent = msg;
+      }
+
+      /* ── Permission Modal ── */
+      function showPermissionModal() {
+        modal.classList.add('visible');
+      }
+      function hidePermissionModal() {
+        modal.classList.remove('visible');
+      }
+
+      retryBtn.addEventListener('click', function () {
+        hidePermissionModal();
+        permissionDenied = false;
+        loadingOverlay.classList.add('visible');
+        loadingMsg.textContent = 'Requesting GPS access...';
+        setStatus('waiting', 'Requesting location...');
+        startWatching();
+      });
+
+      dismissBtn.addEventListener('click', function () {
+        hidePermissionModal();
+        setStatus('error', 'GPS disabled — browsing without location');
+      });
+
+      /* ── Geolocation ── */
+      function onPositionSuccess(pos) {
+        loadingOverlay.classList.remove('visible');
+        hidePermissionModal();
+        const { latitude, longitude, altitude, accuracy, heading, speed } = pos.coords;
+        lastPosition = pos;
+
+        setStatus('active', 'GPS locked' + (heading !== null ? ' — heading ' + Math.round(heading) + '°' : ''));
+
+        latValue.textContent = latitude.toFixed(6);
+        lngValue.textContent = longitude.toFixed(6);
+        altValue.textContent = altitude !== null ? altitude.toFixed(1) + ' m' : '—';
+        speedValue.textContent = speed !== null ? (speed * 3.6).toFixed(1) + ' km/h' : '0.0 km/h';
+
+        const acc = accuracy !== null ? accuracy.toFixed(0) + ' m' : '—';
+        accuracyBadge.textContent = '± ' + acc;
+        accuracyBadge.className = 'status-badge active';
+
+        /* Marker */
+        if (!userMarker) {
+          userMarker = L.marker([latitude, longitude], {
+            icon: L.divIcon({
+              className: '',
+              html: '<div style="background:#0b6f9e;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(11,111,158,0.5);"></div>',
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+            }),
+          }).addTo(map);
+          userMarker.bindPopup(
+            '<b>RACS — Your Location</b><br>' +
+            latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '<br>' +
+            'Accuracy: ±' + (accuracy ? accuracy.toFixed(0) : '?') + 'm'
+          );
+        } else {
+          userMarker.setLatLng([latitude, longitude]);
+        }
+
+        /* Accuracy circle */
+        if (accuracyCircle) map.removeLayer(accuracyCircle);
+        accuracyCircle = L.circle([latitude, longitude], {
+          radius: accuracy || 10,
+          color: '#0b6f9e',
+          fillColor: '#0b6f9e',
+          fillOpacity: 0.10,
+          weight: 1.5,
+          opacity: 0.3,
+        }).addTo(map);
+
+        if (mapFollowsUser) {
+          map.setView([latitude, longitude], Math.max(map.getZoom(), 15));
+        }
+      }
+
+      function onPositionError(err) {
+        loadingOverlay.classList.remove('visible');
+        let msg = 'GPS error';
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            msg = 'Location access blocked';
+            setStatus('error', msg);
+            if (!permissionDenied) {
+              permissionDenied = true;
+              showPermissionModal();
+            }
+            return;
+          case err.POSITION_UNAVAILABLE:
+            msg = 'GPS signal unavailable — try outdoors';
+            break;
+          case err.TIMEOUT:
+            msg = 'GPS timeout — retrying...';
+            loadingOverlay.classList.add('visible');
+            loadingMsg.textContent = 'GPS timeout — still searching...';
+            break;
+        }
+        setStatus('error', msg);
+      }
+
+      /* ── Start/Stop watcher ── */
+      let watchId = null;
+
+      function startWatching() {
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+        }
+        watchId = navigator.geolocation.watchPosition(
+          onPositionSuccess,
+          onPositionError,
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+      }
+
+      if (!navigator.geolocation) {
+        setStatus('error', 'Geolocation not supported by this browser');
+        loadingOverlay.classList.remove('visible');
+      } else {
+        loadingOverlay.classList.add('visible');
+        loadingMsg.textContent = 'Requesting GPS access...';
+        setStatus('waiting', 'Requesting location...');
+        startWatching();
+      }
+
+      window.addEventListener('beforeunload', function () {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      });
+
+      /* ── Recenter ── */
+      btnRecenter.addEventListener('click', function () {
+        if (lastPosition) {
+          mapFollowsUser = true;
+          map.setView([lastPosition.coords.latitude, lastPosition.coords.longitude], 15);
+        } else {
+          mapFollowsUser = true;
+        }
+      });
+      map.on('dragstart', function () { mapFollowsUser = false; });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'r' || e.key === 'R') btnRecenter.click();
+      });
+
+      console.log('RACS GPS Tracker initialized');
+    })();
+  </script>
+</body>
+</html>
