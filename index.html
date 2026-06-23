@@ -293,7 +293,65 @@
       .header { padding: 8px 10px; }
       .logo { width: 54px; }
     }
-  </style>
+  
+
+    /* ── In-App Browser Detection ── */
+    .iab-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11,79,113,0.92);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+    .iab-overlay.visible { display: flex; }
+    .iab-box {
+      background: white;
+      border-radius: 16px;
+      max-width: 380px;
+      width: 100%;
+      padding: 32px 24px 24px;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .iab-icon { font-size: 52px; margin-bottom: 10px; }
+    .iab-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0b4f71;
+      margin-bottom: 10px;
+    }
+    .iab-desc {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+    .iab-btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .iab-btn-primary {
+      background: #0b6f9e;
+      color: white;
+    }
+    .iab-btn-primary:hover { background: #084d70; }
+    .iab-btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .iab-btn-secondary:hover { background: #cbd5e1; }
+    </style>
 </head>
 <body>
 <div id="app">
@@ -568,6 +626,63 @@
 
       console.log('RACS GPS Tracker initialized');
     })();
+  
+  <!-- ── In-App Browser Detection ── -->
+  <div class="iab-overlay" id="iabOverlay">
+    <div class="iab-box">
+      <div class="iab-icon">📱</div>
+      <div class="iab-title">Open in Browser</div>
+      <p class="iab-desc">GPS location requires your device's browser. Tap the button below to open in <strong>Safari</strong> or <strong>Chrome</strong>.</p>
+      <button class="iab-btn iab-btn-primary" id="iabOpenBtn">Open in Browser</button>
+      <button class="iab-btn iab-btn-secondary" id="iabDismissBtn">Continue Here (No GPS)</button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+    // Detect in-app browsers
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isInApp = false;
+    if (ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1 || ua.indexOf('Messenger') > -1) { isInApp = true; }
+    if (ua.indexOf('Instagram') > -1) { isInApp = true; }
+    if (ua.indexOf('Line') > -1) { isInApp = true; }
+    if (ua.indexOf('KAKAOTALK') > -1) { isInApp = true; }
+    if (ua.indexOf('NAVER') > -1) { isInApp = true; }
+    if (window.navigator.standalone) { isInApp = false; } // Already in browser
+
+    var iabOverlay = document.getElementById('iabOverlay');
+    var iabOpenBtn = document.getElementById('iabOpenBtn');
+    var iabDismissBtn = document.getElementById('iabDismissBtn');
+    var currentUrl = window.location.href;
+
+    if (isInApp && iabOverlay) {
+      iabOverlay.classList.add('visible');
+
+      iabOpenBtn.addEventListener('click', function() {
+        // Try to open in system browser
+        var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        var isAndroid = /Android/.test(ua);
+        
+        if (isIOS) {
+          // iOS: try to open in Safari
+          window.location.href = 'x-safari-' + currentUrl;
+          // Fallback: if that doesn't work, try the old method
+          setTimeout(function() {
+            window.location.href = 'googlechrome://' + currentUrl.replace(/^https?:\/\//, '');
+          }, 500);
+        } else if (isAndroid) {
+          // Android: use intent to open in Chrome
+          window.location.href = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;end';
+        }
+      });
+
+      iabDismissBtn.addEventListener('click', function() {
+        iabOverlay.classList.remove('visible');
+      });
+    }
+  })();
   </script>
+</script>
 </body>
 </html>
