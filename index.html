@@ -171,6 +171,148 @@
     }
     .btn-recenter:hover { opacity: 1; box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
 
+    /* ── Map Legend ── */
+    .map-legend {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      background: white;
+      border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      font-size: 12px;
+      min-width: 130px;
+      border: 1px solid #e2e8f0;
+    }
+    .map-legend-title {
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 0;
+    }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid white;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+    .legend-dot.user { background: #0b4f9c; }
+    .legend-dot.racs { background: #c0392b; border-color: #d4a017; }
+    .legend-label {
+      color: #334155;
+      font-weight: 500;
+    }
+    .legend-count {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    /* ── RACS Section ── */
+    .racs-section {
+      border-top: 1px solid #e8ecf1;
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+    .racs-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .racs-section-header:hover { opacity: 0.8; }
+    .racs-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .racs-section-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: #c0392b;
+      background: #fef2f2;
+      padding: 1px 8px;
+      border-radius: 8px;
+    }
+    .racs-toggle-arrow {
+      font-size: 10px;
+      color: #94a3b8;
+      transition: transform 0.2s;
+    }
+    .racs-toggle-arrow.open { transform: rotate(180deg); }
+    .racs-list {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .racs-list.open { max-height: 300px; overflow-y: auto; }
+    .racs-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 4px;
+      border-bottom: 1px solid #f1f3f5;
+      font-size: 12px;
+    }
+    .racs-item:last-child { border-bottom: none; }
+    .racs-item-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .racs-item-dot.online { background: #27ae60; box-shadow: 0 0 4px #27ae60; }
+    .racs-item-dot.standby { background: #f39c12; }
+    .racs-item-dot.offline { background: #e74c3c; }
+    .racs-item-id {
+      font-weight: 600;
+      color: #1f2937;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 11px;
+    }
+    .racs-item-status {
+      font-size: 10px;
+      color: #64748b;
+      text-transform: capitalize;
+    }
+    .racs-item-status.online { color: #27ae60; }
+    .racs-item-status.standby { color: #f39c12; }
+    .racs-item-status.offline { color: #e74c3c; }
+    .racs-item-coords {
+      margin-left: auto;
+      font-size: 9px;
+      color: #94a3b8;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    .racs-empty {
+      font-size: 12px;
+      color: #94a3b8;
+      padding: 6px 0;
+      text-align: center;
+    }
+    .racs-loading {
+      font-size: 11px;
+      color: #94a3b8;
+      padding: 6px 0;
+      text-align: center;
+    }
+
     /* ── Permission Modal ── */
     .modal-overlay {
       display: none;
@@ -287,14 +429,17 @@
       .btn-recenter { bottom: 155px; right: 8px; padding: 8px 10px; font-size: 16px; }
       .attribution { bottom: 140px; }
       .modal-box { padding: 22px 16px 18px; }
+      .map-legend { top: 10px; right: 8px; padding: 8px 10px; font-size: 11px; min-width: 110px; }
+      .racs-item { font-size: 11px; }
+      .racs-item-coords { display: none; }
     }
     @media (max-height: 600px) {
       .status-panel { padding: 6px 10px 8px; }
       .coords-grid { grid-template-columns: 1fr 1fr; }
       .header { padding: 8px 10px; }
       .logo { width: 54px; }
+      .racs-list.open { max-height: 120px; }
     }
-  
 
     /* ── In-App Browser Detection ── */
     .iab-overlay {
@@ -352,7 +497,7 @@
       color: #475569;
     }
     .iab-btn-secondary:hover { background: #cbd5e1; }
-    </style>
+  </style>
 </head>
 <body>
 <div id="app">
@@ -377,6 +522,20 @@
   </div>
 
   <div class="btn-recenter" id="btnRecenter" title="Re-center on your location">⟐</div>
+
+  <!-- ── Legend ── -->
+  <div class="map-legend" id="mapLegend">
+    <div class="map-legend-title">Pin Legend</div>
+    <div class="legend-item">
+      <span class="legend-dot user"></span>
+      <span class="legend-label">You</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot racs"></span>
+      <span class="legend-label">RACS Unit</span>
+      <span class="legend-count" id="racsLegendCount">0</span>
+    </div>
+  </div>
 
   <div class="attribution">
     &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors &bull; BETech &bull; MCGI
@@ -407,6 +566,20 @@
       <div class="coord-cell">
         <div class="label">Speed</div>
         <div class="value" id="speedValue">—</div>
+      </div>
+    </div>
+
+    <!-- ── RACS Units Section ── -->
+    <div class="racs-section">
+      <div class="racs-section-header" id="racsToggle">
+        <div class="racs-section-title">
+          <span>🚔</span> Active RACS
+          <span class="racs-section-count" id="racsCountBadge">0</span>
+        </div>
+        <span class="racs-toggle-arrow" id="racsArrow">▼</span>
+      </div>
+      <div class="racs-list" id="racsList">
+        <div class="racs-loading" id="racsLoading">Loading RACS units...</div>
       </div>
     </div>
   </div>
@@ -446,8 +619,82 @@
     (function () {
       'use strict';
 
-      /* ── Map ── */
-      const map = L.map('map', {
+      /* ── ===================================================== ── */
+      /* ──  CONFIGURATION                                          ── */
+      /* ── ===================================================== ── */
+
+      /** RACS API endpoint — returns array of RACS unit objects */
+      var RACS_API_ENDPOINT = '/api/racs/';
+
+      /** Polling interval in milliseconds (30s) */
+      var RACS_POLL_INTERVAL = 30000;
+
+      /** Maximum acceptable age of RACS data in ms before marking stale */
+      var RACS_MAX_AGE = 120000;
+
+      /** When true, render sample data even if API returns results */
+      var RACS_USE_SAMPLE_FALLBACK = true;
+
+      /* ── ===================================================== ── */
+      /* ──  SAMPLE / FALLBACK RACS DATA                            ── */
+      /* ── ===================================================== ── */
+
+      var SAMPLE_RACS_UNITS = [
+        { id: 'RACS-001', lat: 14.6091,  lng: 121.0347,  status: 'online',  last_seen: Date.now() - 5000,    label: 'EDSA-Cubao' },
+        { id: 'RACS-002', lat: 14.5547,  lng: 120.9892,  status: 'online',  last_seen: Date.now() - 12000,   label: 'Makati-CBD' },
+        { id: 'RACS-003', lat: 14.5790,  lng: 121.1030,  status: 'online',  last_seen: Date.now() - 8000,    label: 'Pasig-Ortigas' },
+        { id: 'RACS-004', lat: 14.6214,  lng: 120.9742,  status: 'standby', last_seen: Date.now() - 45000,   label: 'QC-Memorial' },
+        { id: 'RACS-005', lat: 14.5332,  lng: 120.9785,  status: 'online',  last_seen: Date.now() - 15000,   label: 'Pasay-Taft' },
+        { id: 'RACS-006', lat: 14.6760,  lng: 121.0437,  status: 'standby', last_seen: Date.now() - 60000,   label: 'Valenzuela' },
+      ];
+
+      /* ── ===================================================== ── */
+      /* ──  DOM REFS                                                ── */
+      /* ── ===================================================== ── */
+
+      var statusText     = document.getElementById('statusText');
+      var statusDot      = document.getElementById('statusDot');
+      var latValue       = document.getElementById('latValue');
+      var lngValue       = document.getElementById('lngValue');
+      var altValue       = document.getElementById('altValue');
+      var speedValue     = document.getElementById('speedValue');
+      var accuracyBadge  = document.getElementById('accuracyBadge');
+      var loadingOverlay = document.getElementById('loadingOverlay');
+      var loadingMsg     = document.getElementById('loadingMsg');
+      var btnRecenter    = document.getElementById('btnRecenter');
+      var modal          = document.getElementById('permissionModal');
+      var retryBtn       = document.getElementById('retryBtn');
+      var dismissBtn     = document.getElementById('dismissModalBtn');
+
+      var racsListEl     = document.getElementById('racsList');
+      var racsLoadingEl  = document.getElementById('racsLoading');
+      var racsToggle     = document.getElementById('racsToggle');
+      var racsArrow      = document.getElementById('racsArrow');
+      var racsCountBadge = document.getElementById('racsCountBadge');
+      var racsLegendCount = document.getElementById('racsLegendCount');
+
+      /* ── ===================================================== ── */
+      /* ──  STATE                                                  ── */
+      /* ── ===================================================== ── */
+
+      var userMarker = null;
+      var accuracyCircle = null;
+      var lastPosition = null;
+      var mapFollowsUser = true;
+      var permissionDenied = false;
+
+      var racsLayerGroup = null;       // L.layerGroup for all RACS pins
+      var racsMarkers = {};            // id -> L.marker
+      var racsData = [];               // latest fetched RACS data
+      var racsPollTimer = null;        // setInterval handle
+      var racsListOpen = true;         // whether RACS list is expanded
+      var racsInitialLoad = true;
+
+      /* ── ===================================================== ── */
+      /* ──  MAP INIT                                                ── */
+      /* ── ===================================================== ── */
+
+      var map = L.map('map', {
         zoomControl: true,
         attributionControl: false,
       }).setView([14.5, 121.0], 13);
@@ -457,40 +704,23 @@
         attribution: '&copy; OpenStreetMap',
       }).addTo(map);
 
-      /* ── DOM refs ── */
-      const statusText   = document.getElementById('statusText');
-      const statusDot    = document.getElementById('statusDot');
-      const latValue     = document.getElementById('latValue');
-      const lngValue     = document.getElementById('lngValue');
-      const altValue     = document.getElementById('altValue');
-      const speedValue   = document.getElementById('speedValue');
-      const accuracyBadge = document.getElementById('accuracyBadge');
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const loadingMsg   = document.getElementById('loadingMsg');
-      const btnRecenter  = document.getElementById('btnRecenter');
-      const modal        = document.getElementById('permissionModal');
-      const retryBtn     = document.getElementById('retryBtn');
-      const dismissBtn   = document.getElementById('dismissModalBtn');
+      racsLayerGroup = L.layerGroup().addTo(map);
 
-      /* ── State ── */
-      let userMarker = null;
-      let accuracyCircle = null;
-      let lastPosition = null;
-      let mapFollowsUser = true;
-      let permissionDenied = false;
+      /* ── ===================================================== ── */
+      /* ──  STATUS HELPERS                                          ── */
+      /* ── ===================================================== ── */
 
       function setStatus(type, msg) {
         statusDot.className = 'status-dot ' + type;
         statusText.textContent = msg;
       }
 
-      /* ── Permission Modal ── */
-      function showPermissionModal() {
-        modal.classList.add('visible');
-      }
-      function hidePermissionModal() {
-        modal.classList.remove('visible');
-      }
+      /* ── ===================================================== ── */
+      /* ──  PERMISSION MODAL                                        ── */
+      /* ── ===================================================== ── */
+
+      function showPermissionModal() { modal.classList.add('visible'); }
+      function hidePermissionModal() { modal.classList.remove('visible'); }
 
       retryBtn.addEventListener('click', function () {
         hidePermissionModal();
@@ -506,49 +736,58 @@
         setStatus('error', 'GPS disabled — browsing without location');
       });
 
-      /* ── Geolocation ── */
+      /* ── ===================================================== ── */
+      /* ──  GEOLOCATION (USER)                                      ── */
+      /* ── ===================================================== ── */
+
       function onPositionSuccess(pos) {
         loadingOverlay.classList.remove('visible');
         hidePermissionModal();
-        const { latitude, longitude, altitude, accuracy, heading, speed } = pos.coords;
+        var coords = pos.coords;
+        var latitude = coords.latitude;
+        var longitude = coords.longitude;
+        var altitude = coords.altitude;
+        var accuracy = coords.accuracy;
+        var heading = coords.heading;
+        var speed = coords.speed;
         lastPosition = pos;
 
-        setStatus('active', 'GPS locked' + (heading !== null ? ' — heading ' + Math.round(heading) + '°' : ''));
+        setStatus('active', 'GPS locked' + (heading !== null ? ' — heading ' + Math.round(heading) + '\u00b0' : ''));
 
         latValue.textContent = latitude.toFixed(6);
         lngValue.textContent = longitude.toFixed(6);
-        altValue.textContent = altitude !== null ? altitude.toFixed(1) + ' m' : '—';
+        altValue.textContent = altitude !== null ? altitude.toFixed(1) + ' m' : '\u2014';
         speedValue.textContent = speed !== null ? (speed * 3.6).toFixed(1) + ' km/h' : '0.0 km/h';
 
-        const acc = accuracy !== null ? accuracy.toFixed(0) + ' m' : '—';
-        accuracyBadge.textContent = '± ' + acc;
+        var acc = accuracy !== null ? accuracy.toFixed(0) + ' m' : '\u2014';
+        accuracyBadge.textContent = '\u00b1 ' + acc;
         accuracyBadge.className = 'status-badge active';
 
-        /* Marker */
+        /* ── User marker (BLUE: #0b4f9c) ── */
         if (!userMarker) {
           userMarker = L.marker([latitude, longitude], {
             icon: L.divIcon({
               className: '',
-              html: '<div style="background:#0b6f9e;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(11,111,158,0.5);"></div>',
+              html: '<div style="background:#0b4f9c;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(11,79,156,0.6);"></div>',
               iconSize: [20, 20],
               iconAnchor: [10, 10],
             }),
           }).addTo(map);
           userMarker.bindPopup(
-            '<b>RACS — Your Location</b><br>' +
+            '<b>RACS \u2014 Your Location</b><br>' +
             latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '<br>' +
-            'Accuracy: ±' + (accuracy ? accuracy.toFixed(0) : '?') + 'm'
+            'Accuracy: \u00b1' + (accuracy ? accuracy.toFixed(0) : '?') + 'm'
           );
         } else {
           userMarker.setLatLng([latitude, longitude]);
         }
 
-        /* Accuracy circle */
+        /* ── Accuracy circle (BLUE: #0b4f9c) ── */
         if (accuracyCircle) map.removeLayer(accuracyCircle);
         accuracyCircle = L.circle([latitude, longitude], {
           radius: accuracy || 10,
-          color: '#0b6f9e',
-          fillColor: '#0b6f9e',
+          color: '#0b4f9c',
+          fillColor: '#0b4f9c',
           fillOpacity: 0.10,
           weight: 1.5,
           opacity: 0.3,
@@ -561,7 +800,7 @@
 
       function onPositionError(err) {
         loadingOverlay.classList.remove('visible');
-        let msg = 'GPS error';
+        var msg = 'GPS error';
         switch (err.code) {
           case err.PERMISSION_DENIED:
             msg = 'Location access blocked';
@@ -572,19 +811,19 @@
             }
             return;
           case err.POSITION_UNAVAILABLE:
-            msg = 'GPS signal unavailable — try outdoors';
+            msg = 'GPS signal unavailable \u2014 try outdoors';
             break;
           case err.TIMEOUT:
-            msg = 'GPS timeout — retrying...';
+            msg = 'GPS timeout \u2014 retrying...';
             loadingOverlay.classList.add('visible');
-            loadingMsg.textContent = 'GPS timeout — still searching...';
+            loadingMsg.textContent = 'GPS timeout \u2014 still searching...';
             break;
         }
         setStatus('error', msg);
       }
 
       /* ── Start/Stop watcher ── */
-      let watchId = null;
+      var watchId = null;
 
       function startWatching() {
         if (watchId !== null) {
@@ -629,7 +868,10 @@
         if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       });
 
-      /* ── Recenter ── */
+      /* ── ===================================================== ── */
+      /* ──  RECENTER                                                ── */
+      /* ── ===================================================== ── */
+
       btnRecenter.addEventListener('click', function () {
         if (lastPosition) {
           mapFollowsUser = true;
@@ -643,7 +885,228 @@
         if (e.key === 'r' || e.key === 'R') btnRecenter.click();
       });
 
-      console.log('RACS GPS Tracker initialized');
+      /* ── ===================================================== ── */
+      /* ──  RACS DATA SERVICE                                       ── */
+      /* ── ===================================================== ── */
+
+      /** Render a RACS divIcon marker (RED #c0392b with gold #d4a017 ring) */
+      function createRacsIcon(unit, size) {
+        size = size || 22;
+        var label = unit.label || unit.id;
+        var isOnline = unit.status === 'online';
+        // Online: brighter red with gold ring. Standby/offline: muted.
+        var bg = isOnline ? '#c0392b' : (unit.status === 'standby' ? '#d97706' : '#78716c');
+        var ringColor = isOnline ? '#d4a017' : (unit.status === 'standby' ? '#fbbf24' : '#a8a29e');
+        var shadow = isOnline ? 'rgba(192,57,43,0.5)' : 'rgba(0,0,0,0.15)';
+        return L.divIcon({
+          className: '',
+          html: '<div style="' +
+            'background:' + bg + ';' +
+            'width:' + size + 'px;' +
+            'height:' + size + 'px;' +
+            'border-radius:50%;' +
+            'border:3px solid ' + ringColor + ';' +
+            'box-shadow:0 0 8px ' + shadow + ';' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'font-size:9px;font-weight:bold;color:white;' +
+            'text-shadow:0 1px 2px rgba(0,0,0,0.3);' +
+          '">' + (label.match(/\d+/) || [''])[0] + '</div>',
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+      }
+
+      /** Build popup HTML for a RACS unit */
+      function racsPopupHtml(unit) {
+        var statusEmoji = unit.status === 'online' ? '\u2705' : (unit.status === 'standby' ? '\u23f3' : '\u274c');
+        var ago = '';
+        if (unit.last_seen) {
+          var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
+          if (diff < 60000) {
+            ago = Math.round(diff / 1000) + 's ago';
+          } else {
+            ago = Math.round(diff / 60000) + 'min ago';
+          }
+        }
+        return '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;">' +
+          '<b style="color:#c0392b;font-size:15px;">' + unit.id + '</b>' +
+          (unit.label ? ' <span style="color:#64748b;font-size:11px;">\u2014 ' + unit.label + '</span>' : '') +
+          '<br>' +
+          statusEmoji + ' <span style="text-transform:capitalize;">' + unit.status + '</span>' +
+          (ago ? ' \u2022 ' + ago : '') +
+          '<br>' +
+          '<span style="font-family:monospace;font-size:11px;color:#94a3b8;">' +
+          unit.lat.toFixed(6) + ', ' + unit.lng.toFixed(6) +
+          '</span>' +
+        '</div>';
+      }
+
+      /** Update all RACS visual layers from racsData array */
+      function renderRacsPins() {
+        var existingIds = Object.keys(racsMarkers);
+
+        racsData.forEach(function (unit) {
+          var id = unit.id;
+          var lat = unit.lat;
+          var lng = unit.lng;
+
+          if (racsMarkers[id]) {
+            // Update existing marker
+            racsMarkers[id].setLatLng([lat, lng]);
+            racsMarkers[id].setIcon(createRacsIcon(unit));
+            racsMarkers[id].setPopupContent(racsPopupHtml(unit));
+          } else {
+            // Create new marker
+            var marker = L.marker([lat, lng], {
+              icon: createRacsIcon(unit),
+            }).addTo(racsLayerGroup);
+            marker.bindPopup(racsPopupHtml(unit));
+            marker.bindTooltip(unit.id, {
+              direction: 'top',
+              offset: [0, -14],
+              className: 'racs-tooltip',
+            });
+            racsMarkers[id] = marker;
+          }
+        });
+
+        // Remove markers for units no longer in the data
+        existingIds.forEach(function (id) {
+          if (!racsData.some(function (u) { return u.id === id; })) {
+            racsLayerGroup.removeLayer(racsMarkers[id]);
+            delete racsMarkers[id];
+          }
+        });
+
+        // Update legend count
+        var onlineCount = racsData.filter(function (u) { return u.status === 'online'; }).length;
+        racsLegendCount.textContent = onlineCount;
+      }
+
+      /** Populate the RACS list panel */
+      function populateRacsPanel() {
+        racsCountBadge.textContent = racsData.length;
+
+        // Auto-open list when data loads
+        if (racsData.length > 0) {
+          racsListEl.classList.add('open');
+          racsArrow.classList.add('open');
+          racsListOpen = true;
+        }
+
+        if (racsData.length === 0) {
+          racsListEl.innerHTML = '<div class="racs-empty">No RACS units active</div>';
+          return;
+        }
+
+        var html = '';
+        racsData.forEach(function (unit) {
+          var dotClass = 'racs-item-dot ' + unit.status;
+          var statusClass = 'racs-item-status ' + unit.status;
+          var ago = '';
+          if (unit.last_seen) {
+            var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
+            if (diff < 60000) {
+              ago = Math.round(diff / 1000) + 's';
+            } else if (diff < 3600000) {
+              ago = Math.round(diff / 60000) + 'm';
+            } else {
+              ago = '>1h';
+            }
+          }
+          html +=
+            '<div class="racs-item">' +
+              '<span class="' + dotClass + '"></span>' +
+              '<span class="racs-item-id">' + unit.id + '</span>' +
+              '<span class="racs-item-status ' + unit.status + '">' + unit.status + '</span>' +
+              (ago ? ' <span style="font-size:10px;color:#94a3b8;">' + ago + '</span>' : '') +
+              (unit.label ? ' <span style="font-size:10px;color:#94a3b8;margin-left:4px;">' + unit.label + '</span>' : '') +
+              '<span class="racs-item-coords">' + unit.lat.toFixed(4) + ', ' + unit.lng.toFixed(4) + '</span>' +
+            '</div>';
+        });
+        racsListEl.innerHTML = html;
+      }
+
+      /** Fetch RACS data from API or fall back to sample data */
+      function fetchRacsData() {
+        var fetchUrl = RACS_API_ENDPOINT;
+
+        // Attempt to fetch from API
+        fetch(fetchUrl)
+          .then(function (response) {
+            if (!response.ok) throw new Error('API returned ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (Array.isArray(data) && data.length > 0) {
+              racsData = data;
+            } else if (RACS_USE_SAMPLE_FALLBACK) {
+              // API returned empty/invalid — use sample
+              racsData = getFreshSampleData();
+            }
+            renderRacsPins();
+            populateRacsPanel();
+            if (racsLoadingEl) racsLoadingEl.style.display = 'none';
+            racsInitialLoad = false;
+          })
+          .catch(function () {
+            // API unavailable — use sample data
+            if (RACS_USE_SAMPLE_FALLBACK) {
+              racsData = getFreshSampleData();
+              renderRacsPins();
+              populateRacsPanel();
+            }
+            if (racsLoadingEl) racsLoadingEl.style.display = 'none';
+            racsInitialLoad = false;
+          });
+      }
+
+      /** Get sample data with fresh timestamps */
+      function getFreshSampleData() {
+        var now = Date.now();
+        var OFFSETS = { 'RACS-001': 5000, 'RACS-002': 12000, 'RACS-003': 8000, 'RACS-004': 45000, 'RACS-005': 15000, 'RACS-006': 60000 };
+        return SAMPLE_RACS_UNITS.map(function (unit) {
+          return {
+            id: unit.id,
+            lat: unit.lat + (Math.random() - 0.5) * 0.0005,  // tiny jitter for realism
+            lng: unit.lng + (Math.random() - 0.5) * 0.0005,
+            status: unit.status,
+            last_seen: now - (OFFSETS[unit.id] || 30000),    // absolute timestamp: now minus the age offset
+            label: unit.label,
+          };
+        });
+      }
+
+      /** Start polling for RACS data */
+      function startRacsPolling() {
+        fetchRacsData();
+        if (racsPollTimer) clearInterval(racsPollTimer);
+        racsPollTimer = setInterval(fetchRacsData, RACS_POLL_INTERVAL);
+      }
+
+      /* ── ===================================================== ── */
+      /* ──  RACS PANEL TOGGLE                                       ── */
+      /* ── ===================================================== ── */
+
+      racsToggle.addEventListener('click', function () {
+        racsListOpen = !racsListOpen;
+        if (racsListOpen) {
+          racsListEl.classList.add('open');
+          racsArrow.classList.add('open');
+        } else {
+          racsListEl.classList.remove('open');
+          racsArrow.classList.remove('open');
+        }
+      });
+
+      /* ── ===================================================== ── */
+      /* ──  BOOTSTRAP                                               ── */
+      /* ── ===================================================== ── */
+
+      // Start RACS polling after a short delay to let the map initialize
+      setTimeout(startRacsPolling, 500);
+
+      console.log('RACS GPS Tracker v0.02 initialized');
     })();
   </script>
 
@@ -683,16 +1146,13 @@
         // Try to open in system browser
         var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
         var isAndroid = /Android/.test(ua);
-        
+
         if (isIOS) {
-          // iOS: try to open in Safari
           window.location.href = 'x-safari-' + currentUrl;
-          // Fallback: if that doesn't work, try the old method
           setTimeout(function() {
             window.location.href = 'googlechrome://' + currentUrl.replace(/^https?:\/\//, '');
           }, 500);
         } else if (isAndroid) {
-          // Android: use intent to open in Chrome
           window.location.href = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;end';
         }
       });
