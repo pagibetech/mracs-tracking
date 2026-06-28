@@ -4,17 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RACS GPS Tracker — BETech</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: Arial, sans-serif; background: #f3f6f9; color: #1f2937; }
 
-    /* ── RACS Demo-style Banner ── */
+  <!-- Fonts & Libraries -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* ── RESET & BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── APP CONTAINER ── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
     .header {
-      background: white;
-      padding: 14px 18px;
-      border-bottom: 4px solid #0b6f9e;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      padding: 12px 20px;
+      border-bottom: 3px solid #0b6f9e;
       flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 1px 12px rgba(11, 111, 158, 0.08);
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #0b4f9c, #4AABFF, #A0E6FF, #4AABFF, #0b4f9c);
+      background-size: 200% 100%;
+      animation: shimmer-bar 3s ease-in-out infinite;
+    }
+    @keyframes shimmer-bar {
+      0%, 100% { background-position: 0% 0%; }
+      50% { background-position: 100% 0%; }
     }
     .brand-lockup {
       display: flex;
@@ -25,205 +70,289 @@
       margin: 0 auto;
       text-align: left;
     }
-    .logo { width: 88px; flex: 0 0 auto; }
-
-    .brand-text { line-height: 1.08; min-width: 0; }
+    .logo {
+      width: 72px;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+    }
+    .logo:hover { transform: scale(1.05); }
+    .brand-text { line-height: 1.1; min-width: 0; }
     .brand-mcgi {
       color: #0b4f9c;
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: clamp(18px, 4.2vw, 34px);
-      font-weight: bold;
-      letter-spacing: 0;
+      font-size: clamp(17px, 3.8vw, 30px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
     .brand-sub {
       color: #9a4f16;
-      font-family: Arial Black, Impact, Arial, sans-serif;
-      font-size: clamp(11px, 2.5vw, 19px);
-      font-weight: 900;
-      letter-spacing: 0;
+      font-size: clamp(10px, 2.2vw, 16px);
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      margin-top: 3px;
+      margin-top: 2px;
     }
 
-    /* ── Layout ── */
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
+    /* ── MAP ── */
     #map {
       flex: 1;
       width: 100%;
       z-index: 1;
-      min-height: 50vh;
+      min-height: 40vh;
     }
 
-    /* ── Status Panel ── */
-    .status-panel {
-      background: white;
-      border-top: 2px solid #e0e6ed;
-      padding: 10px 16px 14px;
-      flex-shrink: 0;
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
-    }
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 500;
-    }
-    .status-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-    }
-    .status-dot.active { background: #27ae60; box-shadow: 0 0 6px #27ae60; }
-    .status-dot.waiting { background: #f39c12; animation: pulse 1.5s infinite; }
-    .status-dot.error { background: #e74c3c; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .status-badge {
-      font-size: 11px;
-      padding: 2px 10px;
-      border-radius: 10px;
-      background: #ecf0f1;
-      color: #7f8c8d;
-    }
-    .status-badge.active { background: #e8f8f0; color: #27ae60; }
-
-    .coords-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 6px;
-    }
-    .coord-cell {
-      background: #f8f9fb;
-      border: 1px solid #e8ecf1;
-      border-radius: 6px;
-      padding: 6px 10px;
-      text-align: center;
-    }
-    .coord-cell .label {
-      font-size: 9px;
-      text-transform: uppercase;
-      color: #95a5a6;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
-    }
-    .coord-cell .value {
-      font-size: 14px;
-      font-weight: 600;
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      color: #2c3e50;
-    }
-
-    /* ── Loading overlay ── */
+    /* ── LOADING OVERLAY ── */
     .loading-overlay {
       display: none;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       position: absolute;
-      top: 80px;
+      top: 82px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(11,111,158,0.92);
+      background: rgba(11, 79, 156, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       color: white;
-      padding: 8px 20px;
-      border-radius: 24px;
+      padding: 10px 24px;
+      border-radius: 100px;
       font-size: 13px;
+      font-weight: 500;
       z-index: 1000;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 4px 20px rgba(11,79,156,0.3);
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
-    .loading-overlay.visible { display: flex; }
+    .loading-overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
     .spinner {
-      width: 14px; height: 14px;
-      border: 2px solid white;
-      border-top-color: transparent;
+      width: 16px; height: 16px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: white;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Recenter button ── */
+    /* ── RECENTER BUTTON ── */
     .btn-recenter {
       position: absolute;
-      bottom: 165px;
-      right: 12px;
+      bottom: 175px;
+      right: 14px;
       z-index: 1000;
-      background: white;
-      color: #2c3e50;
-      border: 1px solid #d5dbe3;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 18px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #0b4f9c;
+      border: 1px solid rgba(11, 79, 156, 0.15);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 20px;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-      opacity: 0.85;
-      transition: all 0.2s;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+      opacity: 0.8;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       line-height: 1;
     }
-    .btn-recenter:hover { opacity: 1; box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
+    .btn-recenter:hover {
+      opacity: 1;
+      box-shadow: 0 4px 20px rgba(11,79,156,0.25);
+      transform: scale(1.08);
+    }
+    .btn-recenter:active { transform: scale(0.92); }
 
-    /* ── Map Legend ── */
+    /* ── MAP LEGEND ── */
     .map-legend {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 14px;
+      right: 14px;
       z-index: 1000;
-      background: white;
-      border-radius: 10px;
-      padding: 10px 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px) saturate(160%);
+      -webkit-backdrop-filter: blur(12px) saturate(160%);
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
       font-size: 12px;
-      min-width: 130px;
-      border: 1px solid #e2e8f0;
+      min-width: 140px;
+      border: 1px solid rgba(255,255,255,0.6);
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .map-legend.visible {
+      opacity: 1;
+      transform: translateX(0);
     }
     .map-legend-title {
       font-weight: 700;
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.08em;
       color: #64748b;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .legend-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 3px 0;
+      padding: 4px 0;
     }
     .legend-dot {
       width: 14px; height: 14px;
       border-radius: 50%;
       flex-shrink: 0;
-      border: 2px solid white;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      border: 2.5px solid white;
+      box-shadow: 0 0 6px rgba(0,0,0,0.18);
+      transition: transform 0.3s ease;
     }
+    .legend-item:hover .legend-dot { transform: scale(1.2); }
     .legend-dot.user { background: #0b4f9c; }
     .legend-dot.racs { background: #c0392b; border-color: #d4a017; }
     .legend-label {
       color: #334155;
       font-weight: 500;
+      font-size: 12px;
     }
     .legend-count {
       margin-left: auto;
       font-size: 11px;
       font-weight: 600;
       color: #94a3b8;
+      background: rgba(0,0,0,0.04);
+      padding: 1px 8px;
+      border-radius: 6px;
     }
 
-    /* ── RACS Section ── */
+    /* ── STATUS PANEL (Glassmorphism) ── */
+    .status-panel {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border-top: 1px solid rgba(255,255,255,0.5);
+      padding: 12px 18px 16px;
+      flex-shrink: 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+      position: relative;
+      z-index: 5;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .status-dot::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .status-dot.active {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16,185,129,0.5);
+    }
+    .status-dot.active::after {
+      background: rgba(16,185,129,0.2);
+      opacity: 1;
+      animation: dot-ripple 2s ease-in-out infinite;
+    }
+    @keyframes dot-ripple {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.5); opacity: 0; }
+    }
+    .status-dot.waiting {
+      background: #f59e0b;
+      animation: pulse-wait 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-wait {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+    .status-dot.error { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 12px;
+      border-radius: 100px;
+      background: rgba(0,0,0,0.04);
+      color: #64748b;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .status-badge.active { background: rgba(16,185,129,0.12); color: #059669; }
+
+    /* ── COORDINATES GRID ── */
+    .coords-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .coord-cell {
+      background: rgba(248, 250, 252, 0.7);
+      border: 1px solid rgba(203, 213, 225, 0.4);
+      border-radius: 10px;
+      padding: 8px 10px;
+      text-align: center;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .coord-cell::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, transparent, #4AABFF, transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .coord-cell:hover {
+      border-color: rgba(74, 171, 255, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .coord-cell:hover::before { opacity: 1; }
+    .coord-cell .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .coord-cell .value {
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      color: #0b4f9c;
+      transition: color 0.3s ease;
+      display: inline-block;
+    }
+
+    /* ── RACS SECTION ── */
     .racs-section {
-      border-top: 1px solid #e8ecf1;
-      margin-top: 8px;
-      padding-top: 8px;
+      border-top: 1px solid rgba(203, 213, 225, 0.4);
+      margin-top: 10px;
+      padding-top: 10px;
     }
     .racs-section-header {
       display: flex;
@@ -231,58 +360,78 @@
       justify-content: space-between;
       cursor: pointer;
       user-select: none;
+      padding: 4px 0;
+      border-radius: 8px;
+      transition: background 0.2s ease;
     }
-    .racs-section-header:hover { opacity: 0.8; }
+    .racs-section-header:hover { background: rgba(0,0,0,0.02); }
     .racs-section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.06em;
       color: #475569;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
     .racs-section-count {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       color: #c0392b;
-      background: #fef2f2;
-      padding: 1px 8px;
-      border-radius: 8px;
+      background: rgba(192,57,43,0.08);
+      padding: 2px 10px;
+      border-radius: 100px;
+      transition: all 0.3s ease;
+    }
+    .racs-section-count.pop { animation: count-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes count-pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
     }
     .racs-toggle-arrow {
       font-size: 10px;
       color: #94a3b8;
-      transition: transform 0.2s;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .racs-toggle-arrow.open { transform: rotate(180deg); }
     .racs-list {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease;
+      transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .racs-list.open { max-height: 300px; overflow-y: auto; }
+    .racs-list.open { max-height: 320px; overflow-y: auto; }
+    .racs-list::-webkit-scrollbar { width: 4px; }
+    .racs-list::-webkit-scrollbar-track { background: transparent; }
+    .racs-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .racs-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 5px 4px;
-      border-bottom: 1px solid #f1f3f5;
+      gap: 10px;
+      padding: 7px 8px;
+      border-bottom: 1px solid rgba(241, 243, 245, 0.5);
       font-size: 12px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      opacity: 0;
+      transform: translateX(-8px);
     }
+    .racs-item:hover { background: rgba(11,79,156,0.04); }
     .racs-item:last-child { border-bottom: none; }
     .racs-item-dot {
       width: 10px; height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
+      transition: all 0.3s ease;
     }
-    .racs-item-dot.online { background: #27ae60; box-shadow: 0 0 4px #27ae60; }
-    .racs-item-dot.standby { background: #f39c12; }
-    .racs-item-dot.offline { background: #e74c3c; }
+    .racs-item-dot.online { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.4); animation: dot-pulse-soft 2s ease-in-out infinite; }
+    @keyframes dot-pulse-soft { 0%,100%{box-shadow:0 0 4px rgba(16,185,129,0.3)} 50%{box-shadow:0 0 10px rgba(16,185,129,0.5)} }
+    .racs-item-dot.standby { background: #f59e0b; }
+    .racs-item-dot.offline { background: #94a3b8; }
     .racs-item-id {
       font-weight: 600;
-      color: #1f2937;
+      color: #1e293b;
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 11px;
     }
@@ -290,10 +439,11 @@
       font-size: 10px;
       color: #64748b;
       text-transform: capitalize;
+      font-weight: 500;
     }
-    .racs-item-status.online { color: #27ae60; }
-    .racs-item-status.standby { color: #f39c12; }
-    .racs-item-status.offline { color: #e74c3c; }
+    .racs-item-status.online { color: #059669; }
+    .racs-item-status.standby { color: #d97706; }
+    .racs-item-status.offline { color: #94a3b8; }
     .racs-item-coords {
       margin-left: auto;
       font-size: 9px;
@@ -303,22 +453,40 @@
     .racs-empty {
       font-size: 12px;
       color: #94a3b8;
-      padding: 6px 0;
+      padding: 8px 0;
       text-align: center;
     }
     .racs-loading {
       font-size: 11px;
       color: #94a3b8;
-      padding: 6px 0;
+      padding: 8px 0;
       text-align: center;
     }
 
-    /* ── Permission Modal ── */
+    /* ── ATTRIBUTION ── */
+    .attribution {
+      position: absolute;
+      bottom: 162px;
+      left: 0; right: 0;
+      z-index: 999;
+      text-align: center;
+      font-size: 10px;
+      color: #64748b;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(4px);
+      padding: 3px 10px;
+    }
+    .attribution a { color: #0b6f9e; text-decoration: none; }
+    .attribution a:hover { text-decoration: underline; }
+
+    /* ── PERMISSION MODAL ── */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
       z-index: 9999;
       align-items: center;
       justify-content: center;
@@ -326,127 +494,118 @@
     }
     .modal-overlay.visible { display: flex; }
     .modal-box {
-      background: white;
-      border-radius: 14px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
       max-width: 420px;
       width: 100%;
-      padding: 28px 24px 22px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      padding: 32px 28px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.5);
       text-align: center;
       position: relative;
+      transform: scale(0.9);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    }
+    .modal-overlay.visible .modal-box {
+      transform: scale(1);
+      opacity: 1;
     }
     .modal-icon {
-      font-size: 48px;
+      font-size: 52px;
       margin-bottom: 12px;
+      display: inline-block;
+      animation: float-icon 3s ease-in-out infinite;
+    }
+    @keyframes float-icon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
     }
     .modal-title {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 22px;
+      font-weight: 800;
       color: #0b4f71;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
     }
     .modal-desc {
       font-size: 14px;
       color: #475569;
-      line-height: 1.5;
-      margin-bottom: 6px;
+      line-height: 1.6;
+      margin-bottom: 8px;
     }
     .modal-steps {
       text-align: left;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin: 14px 0;
+      background: rgba(248,250,252,0.8);
+      border: 1px solid rgba(226,232,240,0.6);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 16px 0;
     }
     .modal-steps .step {
       font-size: 13px;
       color: #334155;
-      padding: 4px 0;
+      padding: 5px 0;
       display: flex;
-      gap: 8px;
+      gap: 10px;
+      align-items: flex-start;
     }
     .modal-steps .step-num {
-      background: #0b6f9e;
+      background: linear-gradient(135deg, #0b6f9e, #4AABFF);
       color: white;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 11px;
-      font-weight: bold;
+      font-weight: 700;
       flex-shrink: 0;
       margin-top: 1px;
+    }
+    .modal-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      line-height: 1.4;
     }
     .modal-btn {
       display: block;
       width: 100%;
-      padding: 12px;
+      padding: 13px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       margin-top: 10px;
-      transition: background 0.2s;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: 'Inter', sans-serif;
     }
+    .modal-btn:active { transform: scale(0.97); }
     .modal-btn-primary {
-      background: #0b6f9e;
+      background: linear-gradient(135deg, #0b6f9e, #4AABFF);
       color: white;
+      box-shadow: 0 4px 14px rgba(11,111,158,0.3);
     }
-    .modal-btn-primary:hover { background: #084d70; }
+    .modal-btn-primary:hover {
+      box-shadow: 0 6px 24px rgba(11,111,158,0.4);
+      transform: translateY(-1px);
+    }
     .modal-btn-secondary {
-      background: #e2e8f0;
+      background: rgba(226,232,240,0.7);
       color: #475569;
     }
-    .modal-btn-secondary:hover { background: #cbd5e1; }
+    .modal-btn-secondary:hover { background: rgba(203,213,225,0.8); }
 
-    /* ── Attribution ── */
-    .attribution {
-      position: absolute;
-      bottom: 150px;
-      left: 0; right: 0;
-      z-index: 1000;
-      text-align: center;
-      font-size: 10px;
-      color: #64748b;
-      background: rgba(255,255,255,0.85);
-      padding: 3px 10px;
-    }
-    .attribution a { color: #0b6f9e; text-decoration: none; }
-
-    /* ── Responsive ── */
-    @media (max-width: 640px) {
-      .header { padding: 12px 10px; }
-      .brand-lockup { gap: 10px; }
-      .logo { width: 68px; }
-      .status-panel { padding: 8px 10px 10px; }
-      .coords-grid { grid-template-columns: 1fr 1fr; }
-      .coord-cell { padding: 4px 6px; }
-      .coord-cell .value { font-size: 12px; }
-      .btn-recenter { bottom: 155px; right: 8px; padding: 8px 10px; font-size: 16px; }
-      .attribution { bottom: 140px; }
-      .modal-box { padding: 22px 16px 18px; }
-      .map-legend { top: 10px; right: 8px; padding: 8px 10px; font-size: 11px; min-width: 110px; }
-      .racs-item { font-size: 11px; }
-      .racs-item-coords { display: none; }
-    }
-    @media (max-height: 600px) {
-      .status-panel { padding: 6px 10px 8px; }
-      .coords-grid { grid-template-columns: 1fr 1fr; }
-      .header { padding: 8px 10px; }
-      .logo { width: 54px; }
-      .racs-list.open { max-height: 120px; }
-    }
-
-    /* ── In-App Browser Detection ── */
+    /* ── IAB OVERLAY ── */
     .iab-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(11,79,113,0.92);
+      background: rgba(11,79,113,0.90);
+      backdrop-filter: blur(8px);
       z-index: 10000;
       align-items: center;
       justify-content: center;
@@ -454,58 +613,156 @@
     }
     .iab-overlay.visible { display: flex; }
     .iab-box {
-      background: white;
-      border-radius: 16px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
       max-width: 380px;
       width: 100%;
-      padding: 32px 24px 24px;
+      padding: 36px 28px 28px;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      transform: scale(0.9) translateY(20px);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
     }
-    .iab-icon { font-size: 52px; margin-bottom: 10px; }
+    .iab-overlay.visible .iab-box {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+    .iab-icon { font-size: 54px; margin-bottom: 12px; }
     .iab-title {
       font-size: 22px;
-      font-weight: 700;
+      font-weight: 800;
       color: #0b4f71;
       margin-bottom: 10px;
     }
     .iab-desc {
       font-size: 14px;
       color: #475569;
-      line-height: 1.5;
+      line-height: 1.6;
       margin-bottom: 18px;
     }
     .iab-btn {
       display: block;
       width: 100%;
-      padding: 13px;
+      padding: 14px;
       border: none;
       border-radius: 12px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 8px;
-      transition: background 0.2s;
+      margin-top: 10px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: 'Inter', sans-serif;
     }
+    .iab-btn:active { transform: scale(0.97); }
     .iab-btn-primary {
-      background: #0b6f9e;
+      background: linear-gradient(135deg, #0b6f9e, #4AABFF);
       color: white;
+      box-shadow: 0 4px 14px rgba(11,111,158,0.3);
     }
-    .iab-btn-primary:hover { background: #084d70; }
+    .iab-btn-primary:hover {
+      box-shadow: 0 6px 24px rgba(11,111,158,0.4);
+      transform: translateY(-1px);
+    }
     .iab-btn-secondary {
-      background: #e2e8f0;
+      background: rgba(226,232,240,0.7);
       color: #475569;
     }
-    .iab-btn-secondary:hover { background: #cbd5e1; }
+    .iab-btn-secondary:hover { background: rgba(203,213,225,0.8); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .header { padding: 10px 14px; }
+      .brand-lockup { gap: 10px; }
+      .logo { width: 56px; }
+      .status-panel { padding: 10px 14px 12px; }
+      .coords-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .coord-cell { padding: 6px 8px; }
+      .coord-cell .value { font-size: 12px; }
+      .btn-recenter { bottom: 168px; right: 10px; padding: 10px 12px; font-size: 18px; }
+      .attribution { bottom: 155px; }
+      .modal-box { padding: 24px 18px 20px; border-radius: 16px; }
+      .map-legend { top: 10px; right: 10px; padding: 10px 12px; font-size: 11px; min-width: 120px; }
+      .racs-item { font-size: 11px; }
+      .racs-item-coords { display: none; }
+      .loading-overlay { top: 74px; padding: 8px 16px; font-size: 12px; }
+    }
+    @media (max-height: 600px) {
+      .status-panel { padding: 8px 14px 10px; }
+      .coords-grid { grid-template-columns: 1fr 1fr; }
+      .header { padding: 8px 14px; }
+      .logo { width: 44px; }
+      .brand-mcgi { font-size: 16px; }
+      .brand-sub { font-size: 9px; }
+      .racs-list.open { max-height: 140px; }
+    }
+
+    /* ── SKELETON LOADING ── */
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Leaflet Overrides ── */
+    .racs-tooltip {
+      background: rgba(255,255,255,0.92) !important;
+      backdrop-filter: blur(8px);
+      border: none !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+      border-radius: 8px !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 11px !important;
+      padding: 6px 12px !important;
+    }
+    .racs-tooltip::before {
+      border-top-color: rgba(255,255,255,0.92) !important;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+    .leaflet-popup-tip {
+      box-shadow: none !important;
+    }
+
+    /* ── Map loading state ── */
+    .map-skeleton {
+      position: absolute;
+      top: 82px; left: 0; right: 0; bottom: 0;
+      z-index: 0;
+      background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .map-skeleton-inner {
+      text-align: center;
+      color: #94a3b8;
+    }
+    .map-skeleton-spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #0b4f9c;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
   </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ── RACS-style Header ── -->
+  <!-- ── RACS Header ── -->
   <header class="header">
     <div class="brand-lockup">
-      <img src="/mcgi_racs_logo.png" class="logo" alt="MCGI RACS Logo">
+      <img src="/mcgi_racs_logo.png" class="logo" id="logo" alt="MCGI RACS Logo">
       <div class="brand-text">
         <div class="brand-mcgi">Members Church of God International</div>
         <div class="brand-sub">RACS GPS TRACKER — LIVE MONITORING</div>
@@ -516,14 +773,24 @@
   <!-- ── Map ── -->
   <div id="map"></div>
 
+  <!-- ── Map Skeleton ── -->
+  <div class="map-skeleton" id="mapSkeleton">
+    <div class="map-skeleton-inner">
+      <div class="map-skeleton-spinner"></div>
+      <div style="font-size:14px;font-weight:500;">Loading map...</div>
+    </div>
+  </div>
+
+  <!-- ── Loading Overlay ── -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
     <span id="loadingMsg">Acquiring GPS position...</span>
   </div>
 
+  <!-- ── Recenter Button ── -->
   <div class="btn-recenter" id="btnRecenter" title="Re-center on your location">⟐</div>
 
-  <!-- ── Legend ── -->
+  <!-- ── Map Legend ── -->
   <div class="map-legend" id="mapLegend">
     <div class="map-legend-title">Pin Legend</div>
     <div class="legend-item">
@@ -537,6 +804,7 @@
     </div>
   </div>
 
+  <!-- ── Attribution ── -->
   <div class="attribution">
     &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors &bull; BETech &bull; MCGI
   </div>
@@ -551,19 +819,19 @@
       <span class="status-badge" id="accuracyBadge">± —</span>
     </div>
     <div class="coords-grid">
-      <div class="coord-cell">
+      <div class="coord-cell" id="coordLat">
         <div class="label">Latitude</div>
         <div class="value" id="latValue">—</div>
       </div>
-      <div class="coord-cell">
+      <div class="coord-cell" id="coordLng">
         <div class="label">Longitude</div>
         <div class="value" id="lngValue">—</div>
       </div>
-      <div class="coord-cell">
+      <div class="coord-cell" id="coordAlt">
         <div class="label">Altitude</div>
         <div class="value" id="altValue">—</div>
       </div>
-      <div class="coord-cell">
+      <div class="coord-cell" id="coordSpeed">
         <div class="label">Speed</div>
         <div class="value" id="speedValue">—</div>
       </div>
@@ -604,565 +872,659 @@
           <span>Refresh this page and tap <strong>Allow</strong> when prompted</span>
         </div>
       </div>
-      <p style="font-size:12px;color:#94a3b8;margin-bottom:4px;">
-        <em>iPhone: Settings → Safari → Location → While Using</em>
-      </p>
+      <p class="modal-hint"><em>iPhone: Settings → Safari → Location → While Using</em></p>
       <button class="modal-btn modal-btn-primary" id="retryBtn">🔄 Try Again</button>
       <button class="modal-btn modal-btn-secondary" id="dismissModalBtn">Use Map Without GPS</button>
     </div>
   </div>
 
-</div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    (function () {
-      'use strict';
-
-      /* ── ===================================================== ── */
-      /* ──  CONFIGURATION                                          ── */
-      /* ── ===================================================== ── */
-
-      /** RACS API endpoint — returns array of RACS unit objects */
-      var RACS_API_ENDPOINT = '/api/racs/';
-
-      /** Polling interval in milliseconds (30s) */
-      var RACS_POLL_INTERVAL = 30000;
-
-      /** Maximum acceptable age of RACS data in ms before marking stale */
-      var RACS_MAX_AGE = 120000;
-
-      /** When true, render sample data even if API returns results */
-      var RACS_USE_SAMPLE_FALLBACK = true;
-
-      /* ── ===================================================== ── */
-      /* ──  SAMPLE / FALLBACK RACS DATA                            ── */
-      /* ── ===================================================== ── */
-
-      var SAMPLE_RACS_UNITS = [
-        { id: 'RACS-001', lat: 14.6091,  lng: 121.0347,  status: 'online',  last_seen: Date.now() - 5000,    label: 'EDSA-Cubao' },
-        { id: 'RACS-002', lat: 14.5547,  lng: 120.9892,  status: 'online',  last_seen: Date.now() - 12000,   label: 'Makati-CBD' },
-        { id: 'RACS-003', lat: 14.5790,  lng: 121.1030,  status: 'online',  last_seen: Date.now() - 8000,    label: 'Pasig-Ortigas' },
-        { id: 'RACS-004', lat: 14.6214,  lng: 120.9742,  status: 'standby', last_seen: Date.now() - 45000,   label: 'QC-Memorial' },
-        { id: 'RACS-005', lat: 14.5332,  lng: 120.9785,  status: 'online',  last_seen: Date.now() - 15000,   label: 'Pasay-Taft' },
-        { id: 'RACS-006', lat: 14.6760,  lng: 121.0437,  status: 'standby', last_seen: Date.now() - 60000,   label: 'Valenzuela' },
-      ];
-
-      /* ── ===================================================== ── */
-      /* ──  DOM REFS                                                ── */
-      /* ── ===================================================== ── */
-
-      var statusText     = document.getElementById('statusText');
-      var statusDot      = document.getElementById('statusDot');
-      var latValue       = document.getElementById('latValue');
-      var lngValue       = document.getElementById('lngValue');
-      var altValue       = document.getElementById('altValue');
-      var speedValue     = document.getElementById('speedValue');
-      var accuracyBadge  = document.getElementById('accuracyBadge');
-      var loadingOverlay = document.getElementById('loadingOverlay');
-      var loadingMsg     = document.getElementById('loadingMsg');
-      var btnRecenter    = document.getElementById('btnRecenter');
-      var modal          = document.getElementById('permissionModal');
-      var retryBtn       = document.getElementById('retryBtn');
-      var dismissBtn     = document.getElementById('dismissModalBtn');
-
-      var racsListEl     = document.getElementById('racsList');
-      var racsLoadingEl  = document.getElementById('racsLoading');
-      var racsToggle     = document.getElementById('racsToggle');
-      var racsArrow      = document.getElementById('racsArrow');
-      var racsCountBadge = document.getElementById('racsCountBadge');
-      var racsLegendCount = document.getElementById('racsLegendCount');
-
-      /* ── ===================================================== ── */
-      /* ──  STATE                                                  ── */
-      /* ── ===================================================== ── */
-
-      var userMarker = null;
-      var accuracyCircle = null;
-      var lastPosition = null;
-      var mapFollowsUser = true;
-      var permissionDenied = false;
-
-      var racsLayerGroup = null;       // L.layerGroup for all RACS pins
-      var racsMarkers = {};            // id -> L.marker
-      var racsData = [];               // latest fetched RACS data
-      var racsPollTimer = null;        // setInterval handle
-      var racsListOpen = true;         // whether RACS list is expanded
-      var racsInitialLoad = true;
-
-      /* ── ===================================================== ── */
-      /* ──  MAP INIT                                                ── */
-      /* ── ===================================================== ── */
-
-      var map = L.map('map', {
-        zoomControl: true,
-        attributionControl: false,
-      }).setView([14.5, 121.0], 13);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap',
-      }).addTo(map);
-
-      racsLayerGroup = L.layerGroup().addTo(map);
-
-      /* ── ===================================================== ── */
-      /* ──  STATUS HELPERS                                          ── */
-      /* ── ===================================================== ── */
-
-      function setStatus(type, msg) {
-        statusDot.className = 'status-dot ' + type;
-        statusText.textContent = msg;
-      }
-
-      /* ── ===================================================== ── */
-      /* ──  PERMISSION MODAL                                        ── */
-      /* ── ===================================================== ── */
-
-      function showPermissionModal() { modal.classList.add('visible'); }
-      function hidePermissionModal() { modal.classList.remove('visible'); }
-
-      retryBtn.addEventListener('click', function () {
-        hidePermissionModal();
-        permissionDenied = false;
-        loadingOverlay.classList.add('visible');
-        loadingMsg.textContent = 'Requesting GPS access...';
-        setStatus('waiting', 'Requesting location...');
-        startWatching();
-      });
-
-      dismissBtn.addEventListener('click', function () {
-        hidePermissionModal();
-        setStatus('error', 'GPS disabled — browsing without location');
-      });
-
-      /* ── ===================================================== ── */
-      /* ──  GEOLOCATION (USER)                                      ── */
-      /* ── ===================================================== ── */
-
-      function onPositionSuccess(pos) {
-        loadingOverlay.classList.remove('visible');
-        hidePermissionModal();
-        var coords = pos.coords;
-        var latitude = coords.latitude;
-        var longitude = coords.longitude;
-        var altitude = coords.altitude;
-        var accuracy = coords.accuracy;
-        var heading = coords.heading;
-        var speed = coords.speed;
-        lastPosition = pos;
-
-        setStatus('active', 'GPS locked' + (heading !== null ? ' — heading ' + Math.round(heading) + '\u00b0' : ''));
-
-        latValue.textContent = latitude.toFixed(6);
-        lngValue.textContent = longitude.toFixed(6);
-        altValue.textContent = altitude !== null ? altitude.toFixed(1) + ' m' : '\u2014';
-        speedValue.textContent = speed !== null ? (speed * 3.6).toFixed(1) + ' km/h' : '0.0 km/h';
-
-        var acc = accuracy !== null ? accuracy.toFixed(0) + ' m' : '\u2014';
-        accuracyBadge.textContent = '\u00b1 ' + acc;
-        accuracyBadge.className = 'status-badge active';
-
-        /* ── User marker (BLUE: #0b4f9c) ── */
-        if (!userMarker) {
-          userMarker = L.marker([latitude, longitude], {
-            icon: L.divIcon({
-              className: '',
-              html: '<div style="background:#0b4f9c;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(11,79,156,0.6);"></div>',
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            }),
-          }).addTo(map);
-          userMarker.bindPopup(
-            '<b>RACS \u2014 Your Location</b><br>' +
-            latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '<br>' +
-            'Accuracy: \u00b1' + (accuracy ? accuracy.toFixed(0) : '?') + 'm'
-          );
-        } else {
-          userMarker.setLatLng([latitude, longitude]);
-        }
-
-        /* ── Accuracy circle (BLUE: #0b4f9c) ── */
-        if (accuracyCircle) map.removeLayer(accuracyCircle);
-        accuracyCircle = L.circle([latitude, longitude], {
-          radius: accuracy || 10,
-          color: '#0b4f9c',
-          fillColor: '#0b4f9c',
-          fillOpacity: 0.10,
-          weight: 1.5,
-          opacity: 0.3,
-        }).addTo(map);
-
-        if (mapFollowsUser) {
-          map.setView([latitude, longitude], Math.max(map.getZoom(), 15));
-        }
-      }
-
-      function onPositionError(err) {
-        loadingOverlay.classList.remove('visible');
-        var msg = 'GPS error';
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            msg = 'Location access blocked';
-            setStatus('error', msg);
-            if (!permissionDenied) {
-              permissionDenied = true;
-              showPermissionModal();
-            }
-            return;
-          case err.POSITION_UNAVAILABLE:
-            msg = 'GPS signal unavailable \u2014 try outdoors';
-            break;
-          case err.TIMEOUT:
-            msg = 'GPS timeout \u2014 retrying...';
-            loadingOverlay.classList.add('visible');
-            loadingMsg.textContent = 'GPS timeout \u2014 still searching...';
-            break;
-        }
-        setStatus('error', msg);
-      }
-
-      /* ── Start/Stop watcher ── */
-      var watchId = null;
-
-      function startWatching() {
-        if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
-        }
-        watchId = navigator.geolocation.watchPosition(
-          onPositionSuccess,
-          onPositionError,
-          { enableHighAccuracy: true, timeout: 3000, maximumAge: 5000 }
-        );
-      }
-
-      if (!navigator.geolocation) {
-        setStatus('error', 'Geolocation not supported by this browser');
-        loadingOverlay.classList.remove('visible');
-      } else {
-        // Check if permission was previously denied
-        var permissionChecked = false;
-        if (navigator.permissions && navigator.permissions.query) {
-          navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
-            if (result.state === 'denied') {
-              permissionChecked = true;
-              loadingOverlay.classList.remove('visible');
-              setStatus('error', 'Location access blocked');
-              permissionDenied = true;
-              showPermissionModal();
-            }
-          }).catch(function() {});
-        }
-        // Only start watching if permission wasn't already denied
-        setTimeout(function() {
-          if (!permissionChecked && !permissionDenied) {
-            loadingOverlay.classList.add('visible');
-            loadingMsg.textContent = 'Requesting GPS access...';
-            setStatus('waiting', 'Requesting location...');
-            startWatching();
-          }
-        }, 100);
-      }
-
-      window.addEventListener('beforeunload', function () {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      });
-
-      /* ── ===================================================== ── */
-      /* ──  RECENTER                                                ── */
-      /* ── ===================================================== ── */
-
-      btnRecenter.addEventListener('click', function () {
-        if (lastPosition) {
-          mapFollowsUser = true;
-          map.setView([lastPosition.coords.latitude, lastPosition.coords.longitude], 15);
-        } else {
-          mapFollowsUser = true;
-        }
-      });
-      map.on('dragstart', function () { mapFollowsUser = false; });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'r' || e.key === 'R') btnRecenter.click();
-      });
-
-      /* ── ===================================================== ── */
-      /* ──  RACS DATA SERVICE                                       ── */
-      /* ── ===================================================== ── */
-
-      /** Render a RACS divIcon marker (RED #c0392b with gold #d4a017 ring) */
-      function createRacsIcon(unit, size) {
-        size = size || 22;
-        var label = unit.label || unit.id;
-        var isOnline = unit.status === 'online';
-        // Online: brighter red with gold ring. Standby/offline: muted.
-        var bg = isOnline ? '#c0392b' : (unit.status === 'standby' ? '#d97706' : '#78716c');
-        var ringColor = isOnline ? '#d4a017' : (unit.status === 'standby' ? '#fbbf24' : '#a8a29e');
-        var shadow = isOnline ? 'rgba(192,57,43,0.5)' : 'rgba(0,0,0,0.15)';
-        return L.divIcon({
-          className: '',
-          html: '<div style="' +
-            'background:' + bg + ';' +
-            'width:' + size + 'px;' +
-            'height:' + size + 'px;' +
-            'border-radius:50%;' +
-            'border:3px solid ' + ringColor + ';' +
-            'box-shadow:0 0 8px ' + shadow + ';' +
-            'display:flex;align-items:center;justify-content:center;' +
-            'font-size:9px;font-weight:bold;color:white;' +
-            'text-shadow:0 1px 2px rgba(0,0,0,0.3);' +
-          '">' + (label.match(/\d+/) || [''])[0] + '</div>',
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
-        });
-      }
-
-      /** Build popup HTML for a RACS unit */
-      function racsPopupHtml(unit) {
-        var statusEmoji = unit.status === 'online' ? '\u2705' : (unit.status === 'standby' ? '\u23f3' : '\u274c');
-        var ago = '';
-        if (unit.last_seen) {
-          var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
-          if (diff < 60000) {
-            ago = Math.round(diff / 1000) + 's ago';
-          } else {
-            ago = Math.round(diff / 60000) + 'min ago';
-          }
-        }
-        return '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;">' +
-          '<b style="color:#c0392b;font-size:15px;">' + unit.id + '</b>' +
-          (unit.label ? ' <span style="color:#64748b;font-size:11px;">\u2014 ' + unit.label + '</span>' : '') +
-          '<br>' +
-          statusEmoji + ' <span style="text-transform:capitalize;">' + unit.status + '</span>' +
-          (ago ? ' \u2022 ' + ago : '') +
-          '<br>' +
-          '<span style="font-family:monospace;font-size:11px;color:#94a3b8;">' +
-          unit.lat.toFixed(6) + ', ' + unit.lng.toFixed(6) +
-          '</span>' +
-        '</div>';
-      }
-
-      /** Update all RACS visual layers from racsData array */
-      function renderRacsPins() {
-        var existingIds = Object.keys(racsMarkers);
-
-        racsData.forEach(function (unit) {
-          var id = unit.id;
-          var lat = unit.lat;
-          var lng = unit.lng;
-
-          if (racsMarkers[id]) {
-            // Update existing marker
-            racsMarkers[id].setLatLng([lat, lng]);
-            racsMarkers[id].setIcon(createRacsIcon(unit));
-            racsMarkers[id].setPopupContent(racsPopupHtml(unit));
-          } else {
-            // Create new marker
-            var marker = L.marker([lat, lng], {
-              icon: createRacsIcon(unit),
-            }).addTo(racsLayerGroup);
-            marker.bindPopup(racsPopupHtml(unit));
-            marker.bindTooltip(unit.id, {
-              direction: 'top',
-              offset: [0, -14],
-              className: 'racs-tooltip',
-            });
-            racsMarkers[id] = marker;
-          }
-        });
-
-        // Remove markers for units no longer in the data
-        existingIds.forEach(function (id) {
-          if (!racsData.some(function (u) { return u.id === id; })) {
-            racsLayerGroup.removeLayer(racsMarkers[id]);
-            delete racsMarkers[id];
-          }
-        });
-
-        // Update legend count
-        var onlineCount = racsData.filter(function (u) { return u.status === 'online'; }).length;
-        racsLegendCount.textContent = onlineCount;
-      }
-
-      /** Populate the RACS list panel */
-      function populateRacsPanel() {
-        racsCountBadge.textContent = racsData.length;
-
-        // Auto-open list when data loads
-        if (racsData.length > 0) {
-          racsListEl.classList.add('open');
-          racsArrow.classList.add('open');
-          racsListOpen = true;
-        }
-
-        if (racsData.length === 0) {
-          racsListEl.innerHTML = '<div class="racs-empty">No RACS units active</div>';
-          return;
-        }
-
-        var html = '';
-        racsData.forEach(function (unit) {
-          var dotClass = 'racs-item-dot ' + unit.status;
-          var statusClass = 'racs-item-status ' + unit.status;
-          var ago = '';
-          if (unit.last_seen) {
-            var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
-            if (diff < 60000) {
-              ago = Math.round(diff / 1000) + 's';
-            } else if (diff < 3600000) {
-              ago = Math.round(diff / 60000) + 'm';
-            } else {
-              ago = '>1h';
-            }
-          }
-          html +=
-            '<div class="racs-item">' +
-              '<span class="' + dotClass + '"></span>' +
-              '<span class="racs-item-id">' + unit.id + '</span>' +
-              '<span class="racs-item-status ' + unit.status + '">' + unit.status + '</span>' +
-              (ago ? ' <span style="font-size:10px;color:#94a3b8;">' + ago + '</span>' : '') +
-              (unit.label ? ' <span style="font-size:10px;color:#94a3b8;margin-left:4px;">' + unit.label + '</span>' : '') +
-              '<span class="racs-item-coords">' + unit.lat.toFixed(4) + ', ' + unit.lng.toFixed(4) + '</span>' +
-            '</div>';
-        });
-        racsListEl.innerHTML = html;
-      }
-
-      /** Fetch RACS data from API or fall back to sample data */
-      function fetchRacsData() {
-        var fetchUrl = RACS_API_ENDPOINT;
-
-        // Attempt to fetch from API
-        fetch(fetchUrl)
-          .then(function (response) {
-            if (!response.ok) throw new Error('API returned ' + response.status);
-            return response.json();
-          })
-          .then(function (data) {
-            if (Array.isArray(data) && data.length > 0) {
-              racsData = data;
-            } else if (RACS_USE_SAMPLE_FALLBACK) {
-              // API returned empty/invalid — use sample
-              racsData = getFreshSampleData();
-            }
-            renderRacsPins();
-            populateRacsPanel();
-            if (racsLoadingEl) racsLoadingEl.style.display = 'none';
-            racsInitialLoad = false;
-          })
-          .catch(function () {
-            // API unavailable — use sample data
-            if (RACS_USE_SAMPLE_FALLBACK) {
-              racsData = getFreshSampleData();
-              renderRacsPins();
-              populateRacsPanel();
-            }
-            if (racsLoadingEl) racsLoadingEl.style.display = 'none';
-            racsInitialLoad = false;
-          });
-      }
-
-      /** Get sample data with fresh timestamps */
-      function getFreshSampleData() {
-        var now = Date.now();
-        var OFFSETS = { 'RACS-001': 5000, 'RACS-002': 12000, 'RACS-003': 8000, 'RACS-004': 45000, 'RACS-005': 15000, 'RACS-006': 60000 };
-        return SAMPLE_RACS_UNITS.map(function (unit) {
-          return {
-            id: unit.id,
-            lat: unit.lat + (Math.random() - 0.5) * 0.0005,  // tiny jitter for realism
-            lng: unit.lng + (Math.random() - 0.5) * 0.0005,
-            status: unit.status,
-            last_seen: now - (OFFSETS[unit.id] || 30000),    // absolute timestamp: now minus the age offset
-            label: unit.label,
-          };
-        });
-      }
-
-      /** Start polling for RACS data */
-      function startRacsPolling() {
-        fetchRacsData();
-        if (racsPollTimer) clearInterval(racsPollTimer);
-        racsPollTimer = setInterval(fetchRacsData, RACS_POLL_INTERVAL);
-      }
-
-      /* ── ===================================================== ── */
-      /* ──  RACS PANEL TOGGLE                                       ── */
-      /* ── ===================================================== ── */
-
-      racsToggle.addEventListener('click', function () {
-        racsListOpen = !racsListOpen;
-        if (racsListOpen) {
-          racsListEl.classList.add('open');
-          racsArrow.classList.add('open');
-        } else {
-          racsListEl.classList.remove('open');
-          racsArrow.classList.remove('open');
-        }
-      });
-
-      /* ── ===================================================== ── */
-      /* ──  BOOTSTRAP                                               ── */
-      /* ── ===================================================== ── */
-
-      // Start RACS polling after a short delay to let the map initialize
-      setTimeout(startRacsPolling, 500);
-
-      console.log('RACS GPS Tracker v0.02 initialized');
-    })();
-  </script>
-
-  <!-- ── In-App Browser Detection ── -->
+  <!-- ── In-App Browser Overlay ── -->
   <div class="iab-overlay" id="iabOverlay">
     <div class="iab-box">
       <div class="iab-icon">📱</div>
       <div class="iab-title">Open in Browser</div>
-      <p class="iab-desc">GPS location requires your device's browser. Tap the button below to open in <strong>Safari</strong> or <strong>Chrome</strong>.</p>
+      <p class="iab-desc">GPS location requires your device's browser. Tap below to open in <strong>Safari</strong> or <strong>Chrome</strong>.</p>
       <button class="iab-btn iab-btn-primary" id="iabOpenBtn">Open in Browser</button>
       <button class="iab-btn iab-btn-secondary" id="iabDismissBtn">Continue Here (No GPS)</button>
     </div>
   </div>
 
-  <script>
-  (function() {
-    'use strict';
-    // Detect in-app browsers
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
-    var isInApp = false;
-    if (ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1 || ua.indexOf('Messenger') > -1) { isInApp = true; }
-    if (ua.indexOf('Instagram') > -1) { isInApp = true; }
-    if (ua.indexOf('Line') > -1) { isInApp = true; }
-    if (ua.indexOf('KAKAOTALK') > -1) { isInApp = true; }
-    if (ua.indexOf('NAVER') > -1) { isInApp = true; }
-    if (window.navigator.standalone) { isInApp = false; } // Already in browser
+</div>
 
-    var iabOverlay = document.getElementById('iabOverlay');
-    var iabOpenBtn = document.getElementById('iabOpenBtn');
-    var iabDismissBtn = document.getElementById('iabDismissBtn');
-    var currentUrl = window.location.href;
+<script>
+(function () {
+  'use strict';
 
-    if (isInApp && iabOverlay) {
-      iabOverlay.classList.add('visible');
+  /* ── ===================================================== ── */
+  /* ──  CONFIGURATION                                          ── */
+  /* ── ===================================================== ── */
 
-      iabOpenBtn.addEventListener('click', function() {
-        // Try to open in system browser
-        var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-        var isAndroid = /Android/.test(ua);
+  var RACS_API_ENDPOINT = '/api/racs/';
+  var RACS_POLL_INTERVAL = 30000;
+  var RACS_MAX_AGE = 120000;
+  var RACS_USE_SAMPLE_FALLBACK = true;
 
-        if (isIOS) {
-          window.location.href = 'x-safari-' + currentUrl;
-          setTimeout(function() {
-            window.location.href = 'googlechrome://' + currentUrl.replace(/^https?:\/\//, '');
-          }, 500);
-        } else if (isAndroid) {
-          window.location.href = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;end';
-        }
-      });
+  /* ── ===================================================== ── */
+  /* ──  SAMPLE / FALLBACK RACS DATA                            ── */
+  /* ── ===================================================== ── */
 
-      iabDismissBtn.addEventListener('click', function() {
-        iabOverlay.classList.remove('visible');
-      });
+  var SAMPLE_RACS_UNITS = [
+    { id: 'RACS-001', lat: 14.6091,  lng: 121.0347,  status: 'online',  last_seen: Date.now() - 5000,    label: 'EDSA-Cubao' },
+    { id: 'RACS-002', lat: 14.5547,  lng: 120.9892,  status: 'online',  last_seen: Date.now() - 12000,   label: 'Makati-CBD' },
+    { id: 'RACS-003', lat: 14.5790,  lng: 121.1030,  status: 'online',  last_seen: Date.now() - 8000,    label: 'Pasig-Ortigas' },
+    { id: 'RACS-004', lat: 14.6214,  lng: 120.9742,  status: 'standby', last_seen: Date.now() - 45000,   label: 'QC-Memorial' },
+    { id: 'RACS-005', lat: 14.5332,  lng: 120.9785,  status: 'online',  last_seen: Date.now() - 15000,   label: 'Pasay-Taft' },
+    { id: 'RACS-006', lat: 14.6760,  lng: 121.0437,  status: 'standby', last_seen: Date.now() - 60000,   label: 'Valenzuela' },
+  ];
+
+  /* ── ===================================================== ── */
+  /* ──  DOM REFS                                                ── */
+  /* ── ===================================================== ── */
+
+  var statusText     = document.getElementById('statusText');
+  var statusDot      = document.getElementById('statusDot');
+  var latValue       = document.getElementById('latValue');
+  var lngValue       = document.getElementById('lngValue');
+  var altValue       = document.getElementById('altValue');
+  var speedValue     = document.getElementById('speedValue');
+  var accuracyBadge  = document.getElementById('accuracyBadge');
+  var loadingOverlay = document.getElementById('loadingOverlay');
+  var loadingMsg     = document.getElementById('loadingMsg');
+  var btnRecenter    = document.getElementById('btnRecenter');
+  var modal          = document.getElementById('permissionModal');
+  var retryBtn       = document.getElementById('retryBtn');
+  var dismissBtn     = document.getElementById('dismissModalBtn');
+  var mapLegend      = document.getElementById('mapLegend');
+  var mapSkeleton    = document.getElementById('mapSkeleton');
+
+  var racsListEl     = document.getElementById('racsList');
+  var racsLoadingEl  = document.getElementById('racsLoading');
+  var racsToggle     = document.getElementById('racsToggle');
+  var racsArrow      = document.getElementById('racsArrow');
+  var racsCountBadge = document.getElementById('racsCountBadge');
+  var racsLegendCount = document.getElementById('racsLegendCount');
+
+  /* ── ===================================================== ── */
+  /* ──  STATE                                                  ── */
+  /* ── ===================================================== ── */
+
+  var userMarker = null;
+  var accuracyCircle = null;
+  var lastPosition = null;
+  var mapFollowsUser = true;
+  var permissionDenied = false;
+  var racsInitialLoad = true;
+
+  var racsLayerGroup = null;
+  var racsMarkers = {};
+  var racsData = [];
+  var racsPollTimer = null;
+  var racsListOpen = true;
+
+  /* ── ===================================================== ── */
+  /* ──  GSAP ANIMATION HELPERS                                 ── */
+  /* ── ===================================================== ── */
+
+  // Animate a value element with a counting-up effect
+  function animateValue(el, newText) {
+    if (el.textContent === newText) return;
+    gsap.fromTo(el,
+      { opacity: 0, y: -6 },
+      { opacity: 1, y: 0, duration: 0.35, ease: 'back.out(1.4)' }
+    );
+    el.textContent = newText;
+  }
+
+  // Animate RACS items sliding in
+  function animateRacsItems() {
+    var items = racsListEl.querySelectorAll('.racs-item');
+    gsap.fromTo(items,
+      { opacity: 0, x: -12, scale: 0.95 },
+      {
+        opacity: 1, x: 0, scale: 1,
+        duration: 0.3,
+        stagger: 0.04,
+        ease: 'back.out(1.2)'
+      }
+    );
+  }
+
+  // Pulse the RACS count badge
+  function pulseBadge() {
+    racsCountBadge.classList.remove('pop');
+    void racsCountBadge.offsetWidth;
+    racsCountBadge.classList.add('pop');
+  }
+
+  // Animate modal entrance
+  function animateModalIn(el) {
+    var box = el.querySelector('.modal-box');
+    if (box) {
+      gsap.fromTo(box,
+        { scale: 0.85, opacity: 0, y: 20 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.5)' }
+      );
     }
-  })();
-  </script>
+  }
+
+  // Marker drop animation — animate from above
+  function animateMarkerDrop(marker) {
+    var latlng = marker.getLatLng();
+    var startLat = latlng.lat + 0.05; // start above
+    marker.setLatLng([startLat, latlng.lng]);
+    var el = marker.getElement();
+    if (el) {
+      gsap.fromTo(el,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.2 }
+      );
+    }
+    // Animate the marker sliding down
+    var frames = 0;
+    var totalFrames = 20;
+    var interval = setInterval(function () {
+      frames++;
+      var progress = frames / totalFrames;
+      var eased = 1 - Math.pow(1 - progress, 3); // cubic out
+      var currentLat = startLat - (startLat - latlng.lat) * eased;
+      marker.setLatLng([currentLat, latlng.lng]);
+      if (frames >= totalFrames) {
+        clearInterval(interval);
+        marker.setLatLng(latlng);
+      }
+    }, 16);
+  }
+
+  /* ── ===================================================== ── */
+  /* ──  MAP INIT                                                ── */
+  /* ── ===================================================== ── */
+
+  var map = L.map('map', {
+    zoomControl: true,
+    attributionControl: false,
+  }).setView([14.5, 121.0], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap',
+  }).addTo(map);
+
+  racsLayerGroup = L.layerGroup().addTo(map);
+
+  // Hide skeleton when map loads
+  map.whenReady(function () {
+    gsap.to(mapSkeleton, { opacity: 0, duration: 0.4, onComplete: function () {
+      mapSkeleton.style.display = 'none';
+    }});
+    // Animate legend in after map loads
+    gsap.to(mapLegend, { opacity: 1, x: 0, duration: 0.5, delay: 0.3, ease: 'back.out(1.4)' });
+  });
+
+  /* ── ===================================================== ── */
+  /* ──  STATUS HELPERS                                          ── */
+  /* ── ===================================================== ── */
+
+  function setStatus(type, msg) {
+    var oldClassName = statusDot.className;
+    statusDot.className = 'status-dot ' + type;
+    if (oldClassName !== statusDot.className) {
+      gsap.fromTo(statusDot, { scale: 1.3 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+    }
+    if (statusText.textContent !== msg) {
+      gsap.fromTo(statusText,
+        { opacity: 0, y: -4 },
+        { opacity: 1, y: 0, duration: 0.2, ease: 'power1.out' }
+      );
+      statusText.textContent = msg;
+    }
+  }
+
+  /* ── ===================================================== ── */
+  /* ──  PERMISSION MODAL                                        ── */
+  /* ── ===================================================== ── */
+
+  function showPermissionModal() {
+    modal.classList.add('visible');
+    animateModalIn(modal);
+  }
+  function hidePermissionModal() { modal.classList.remove('visible'); }
+
+  retryBtn.addEventListener('click', function () {
+    hidePermissionModal();
+    permissionDenied = false;
+    loadingOverlay.classList.add('visible');
+    loadingMsg.textContent = 'Requesting GPS access...';
+    setStatus('waiting', 'Requesting location...');
+    startWatching();
+  });
+
+  dismissBtn.addEventListener('click', function () {
+    hidePermissionModal();
+    setStatus('error', 'GPS disabled — browsing without location');
+  });
+
+  /* ── ===================================================== ── */
+  /* ──  GEOLOCATION (USER)                                      ── */
+  /* ── ===================================================== ── */
+
+  function onPositionSuccess(pos) {
+    loadingOverlay.classList.remove('visible');
+    hidePermissionModal();
+    var coords = pos.coords;
+    var latitude = coords.latitude;
+    var longitude = coords.longitude;
+    var altitude = coords.altitude;
+    var accuracy = coords.accuracy;
+    var heading = coords.heading;
+    var speed = coords.speed;
+    lastPosition = pos;
+
+    setStatus('active', 'GPS locked' + (heading !== null ? ' — heading ' + Math.round(heading) + '\u00b0' : ''));
+
+    // Animate coordinate values with counter effect
+    animateValue(latValue, latitude.toFixed(6));
+    animateValue(lngValue, longitude.toFixed(6));
+    animateValue(altValue, altitude !== null ? altitude.toFixed(1) + ' m' : '\u2014');
+    animateValue(speedValue, speed !== null ? (speed * 3.6).toFixed(1) + ' km/h' : '0.0 km/h');
+
+    var accText = accuracy !== null ? accuracy.toFixed(0) + ' m' : '\u2014';
+    accuracyBadge.textContent = '\u00b1 ' + accText;
+    accuracyBadge.className = 'status-badge active';
+
+    /* ── User marker (BLUE: #0b4f9c) ── */
+    if (!userMarker) {
+      userMarker = L.marker([latitude, longitude], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="background:#0b4f9c;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 0 12px rgba(11,79,156,0.6);"></div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      }).addTo(map);
+      userMarker.bindPopup(
+        '<b>RACS — Your Location</b><br>' +
+        latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '<br>' +
+        'Accuracy: \u00b1' + (accuracy ? accuracy.toFixed(0) : '?') + 'm'
+      );
+      // Animate marker drop on first position
+      animateMarkerDrop(userMarker);
+    } else {
+      userMarker.setLatLng([latitude, longitude]);
+    }
+
+    /* ── Accuracy circle (BLUE: #0b4f9c) ── */
+    if (accuracyCircle) map.removeLayer(accuracyCircle);
+    accuracyCircle = L.circle([latitude, longitude], {
+      radius: accuracy || 10,
+      color: '#0b4f9c',
+      fillColor: '#0b4f9c',
+      fillOpacity: 0.08,
+      weight: 1.5,
+      opacity: 0.25,
+    }).addTo(map);
+
+    if (mapFollowsUser) {
+      map.setView([latitude, longitude], Math.max(map.getZoom(), 15));
+    }
+  }
+
+  function onPositionError(err) {
+    loadingOverlay.classList.remove('visible');
+    var msg = 'GPS error';
+    switch (err.code) {
+      case err.PERMISSION_DENIED:
+        msg = 'Location access blocked';
+        setStatus('error', msg);
+        if (!permissionDenied) {
+          permissionDenied = true;
+          showPermissionModal();
+        }
+        return;
+      case err.POSITION_UNAVAILABLE:
+        msg = 'GPS signal unavailable — try outdoors';
+        break;
+      case err.TIMEOUT:
+        msg = 'GPS timeout — retrying...';
+        loadingOverlay.classList.add('visible');
+        loadingMsg.textContent = 'GPS timeout — still searching...';
+        break;
+    }
+    setStatus('error', msg);
+  }
+
+  /* ── Start/Stop watcher ── */
+  var watchId = null;
+
+  function startWatching() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = navigator.geolocation.watchPosition(
+      onPositionSuccess,
+      onPositionError,
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 5000 }
+    );
+  }
+
+  if (!navigator.geolocation) {
+    setStatus('error', 'Geolocation not supported by this browser');
+    loadingOverlay.classList.remove('visible');
+  } else {
+    var permissionChecked = false;
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+        if (result.state === 'denied') {
+          permissionChecked = true;
+          loadingOverlay.classList.remove('visible');
+          setStatus('error', 'Location access blocked');
+          permissionDenied = true;
+          showPermissionModal();
+        }
+      }).catch(function() {});
+    }
+    setTimeout(function() {
+      if (!permissionChecked && !permissionDenied) {
+        loadingOverlay.classList.add('visible');
+        loadingMsg.textContent = 'Requesting GPS access...';
+        setStatus('waiting', 'Requesting location...');
+        startWatching();
+      }
+    }, 100);
+  }
+
+  window.addEventListener('beforeunload', function () {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  });
+
+  /* ── ===================================================== ── */
+  /* ──  RECENTER                                                ── */
+  /* ── ===================================================== ── */
+
+  btnRecenter.addEventListener('click', function () {
+    if (lastPosition) {
+      mapFollowsUser = true;
+      map.setView([lastPosition.coords.latitude, lastPosition.coords.longitude], 15);
+    } else {
+      mapFollowsUser = true;
+    }
+    // Animate the recenter button
+    gsap.fromTo(btnRecenter, { scale: 1.2 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+  });
+  map.on('dragstart', function () { mapFollowsUser = false; });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'r' || e.key === 'R') btnRecenter.click();
+  });
+
+  /* ── ===================================================== ── */
+  /* ──  RACS DATA SERVICE                                       ── */
+  /* ── ===================================================== ── */
+
+  function createRacsIcon(unit, size) {
+    size = size || 22;
+    var label = unit.label || unit.id;
+    var isOnline = unit.status === 'online';
+    var bg = isOnline ? '#c0392b' : (unit.status === 'standby' ? '#d97706' : '#78716c');
+    var ringColor = isOnline ? '#d4a017' : (unit.status === 'standby' ? '#fbbf24' : '#a8a29e');
+    var shadow = isOnline ? 'rgba(192,57,43,0.5)' : 'rgba(0,0,0,0.15)';
+    return L.divIcon({
+      className: '',
+      html: '<div style="' +
+        'background:' + bg + ';' +
+        'width:' + size + 'px;' +
+        'height:' + size + 'px;' +
+        'border-radius:50%;' +
+        'border:3px solid ' + ringColor + ';' +
+        'box-shadow:0 0 8px ' + shadow + ';' +
+        'display:flex;align-items:center;justify-content:center;' +
+        'font-size:9px;font-weight:bold;color:white;' +
+        'text-shadow:0 1px 2px rgba(0,0,0,0.3);' +
+        'transition:transform 0.2s ease;' +
+      '">' + (label.match(/\d+/) || [''])[0] + '</div>',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  }
+
+  function racsPopupHtml(unit) {
+    var statusEmoji = unit.status === 'online' ? '\u2705' : (unit.status === 'standby' ? '\u23f3' : '\u274c');
+    var ago = '';
+    if (unit.last_seen) {
+      var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
+      if (diff < 60000) { ago = Math.round(diff / 1000) + 's ago'; }
+      else { ago = Math.round(diff / 60000) + 'min ago'; }
+    }
+    return '<div style="font-family:Inter,Arial,sans-serif;font-size:13px;line-height:1.6;">' +
+      '<b style="color:#c0392b;font-size:15px;">' + unit.id + '</b>' +
+      (unit.label ? ' <span style="color:#64748b;font-size:11px;">\u2014 ' + unit.label + '</span>' : '') +
+      '<br>' +
+      statusEmoji + ' <span style="text-transform:capitalize;">' + unit.status + '</span>' +
+      (ago ? ' \u2022 ' + ago : '') +
+      '<br>' +
+      '<span style="font-family:monospace;font-size:11px;color:#94a3b8;">' +
+      unit.lat.toFixed(6) + ', ' + unit.lng.toFixed(6) +
+      '</span></div>';
+  }
+
+  function renderRacsPins() {
+    var existingIds = Object.keys(racsMarkers);
+    var isFirstLoad = racsMarkers.length === 0;
+
+    racsData.forEach(function (unit) {
+      var id = unit.id;
+      var lat = unit.lat;
+      var lng = unit.lng;
+
+      if (racsMarkers[id]) {
+        racsMarkers[id].setLatLng([lat, lng]);
+        racsMarkers[id].setIcon(createRacsIcon(unit));
+        racsMarkers[id].setPopupContent(racsPopupHtml(unit));
+      } else {
+        var marker = L.marker([lat, lng], {
+          icon: createRacsIcon(unit),
+        }).addTo(racsLayerGroup);
+        marker.bindPopup(racsPopupHtml(unit));
+        marker.bindTooltip(unit.id, {
+          direction: 'top',
+          offset: [0, -14],
+          className: 'racs-tooltip',
+        });
+        racsMarkers[id] = marker;
+        // Animate new markers dropping in
+        if (!isFirstLoad) {
+          animateMarkerDrop(marker);
+        } else {
+          // On first load, stagger the drops
+          setTimeout(function(m) { return function() { animateMarkerDrop(m); }; }(marker), Math.random() * 600);
+        }
+      }
+    });
+
+    existingIds.forEach(function (id) {
+      if (!racsData.some(function (u) { return u.id === id; })) {
+        racsLayerGroup.removeLayer(racsMarkers[id]);
+        delete racsMarkers[id];
+      }
+    });
+
+    var onlineCount = racsData.filter(function (u) { return u.status === 'online'; }).length;
+    racsLegendCount.textContent = onlineCount;
+    gsap.fromTo(racsLegendCount, { scale: 1.3 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+  }
+
+  function populateRacsPanel() {
+    var prevCount = parseInt(racsCountBadge.textContent, 10);
+    racsCountBadge.textContent = racsData.length;
+    if (racsData.length !== prevCount) pulseBadge();
+
+    if (racsData.length > 0) {
+      racsListEl.classList.add('open');
+      racsArrow.classList.add('open');
+      racsListOpen = true;
+    }
+
+    if (racsData.length === 0) {
+      racsListEl.innerHTML = '<div class="racs-empty">No RACS units active</div>';
+      return;
+    }
+
+    var html = '';
+    racsData.forEach(function (unit) {
+      var dotClass = 'racs-item-dot ' + unit.status;
+      var statusClass = 'racs-item-status ' + unit.status;
+      var ago = '';
+      if (unit.last_seen) {
+        var diff = Date.now() - (typeof unit.last_seen === 'string' ? new Date(unit.last_seen).getTime() : unit.last_seen);
+        if (diff < 60000) { ago = Math.round(diff / 1000) + 's'; }
+        else if (diff < 3600000) { ago = Math.round(diff / 60000) + 'm'; }
+        else { ago = '>1h'; }
+      }
+      html +=
+        '<div class="racs-item">' +
+          '<span class="' + dotClass + '"></span>' +
+          '<span class="racs-item-id">' + unit.id + '</span>' +
+          '<span class="racs-item-status ' + unit.status + '">' + unit.status + '</span>' +
+          (ago ? ' <span style="font-size:10px;color:#94a3b8;">' + ago + '</span>' : '') +
+          (unit.label ? ' <span style="font-size:10px;color:#94a3b8;margin-left:4px;">' + unit.label + '</span>' : '') +
+          '<span class="racs-item-coords">' + unit.lat.toFixed(4) + ', ' + unit.lng.toFixed(4) + '</span>' +
+        '</div>';
+    });
+    racsListEl.innerHTML = html;
+    // Animate items sliding in
+    animateRacsItems();
+  }
+
+  function fetchRacsData() {
+    var fetchUrl = RACS_API_ENDPOINT;
+
+    fetch(fetchUrl)
+      .then(function (response) {
+        if (!response.ok) throw new Error('API returned ' + response.status);
+        return response.json();
+      })
+      .then(function (data) {
+        if (Array.isArray(data) && data.length > 0) {
+          racsData = data;
+        } else if (RACS_USE_SAMPLE_FALLBACK) {
+          racsData = getFreshSampleData();
+        }
+        renderRacsPins();
+        populateRacsPanel();
+        if (racsLoadingEl) racsLoadingEl.style.display = 'none';
+        racsInitialLoad = false;
+      })
+      .catch(function () {
+        if (RACS_USE_SAMPLE_FALLBACK) {
+          racsData = getFreshSampleData();
+          renderRacsPins();
+          populateRacsPanel();
+        }
+        if (racsLoadingEl) racsLoadingEl.style.display = 'none';
+        racsInitialLoad = false;
+      });
+  }
+
+  function getFreshSampleData() {
+    var now = Date.now();
+    var OFFSETS = { 'RACS-001': 5000, 'RACS-002': 12000, 'RACS-003': 8000, 'RACS-004': 45000, 'RACS-005': 15000, 'RACS-006': 60000 };
+    return SAMPLE_RACS_UNITS.map(function (unit) {
+      return {
+        id: unit.id,
+        lat: unit.lat + (Math.random() - 0.5) * 0.0005,
+        lng: unit.lng + (Math.random() - 0.5) * 0.0005,
+        status: unit.status,
+        last_seen: now - (OFFSETS[unit.id] || 30000),
+        label: unit.label,
+      };
+    });
+  }
+
+  function startRacsPolling() {
+    fetchRacsData();
+    if (racsPollTimer) clearInterval(racsPollTimer);
+    racsPollTimer = setInterval(fetchRacsData, RACS_POLL_INTERVAL);
+  }
+
+  /* ── ===================================================== ── */
+  /* ──  RACS PANEL TOGGLE                                       ── */
+  /* ── ===================================================== ── */
+
+  racsToggle.addEventListener('click', function () {
+    racsListOpen = !racsListOpen;
+    if (racsListOpen) {
+      racsListEl.classList.add('open');
+      racsArrow.classList.add('open');
+    } else {
+      racsListEl.classList.remove('open');
+      racsArrow.classList.remove('open');
+    }
+  });
+
+  /* ── ===================================================== ── */
+  /* ──  BOOTSTRAP                                               ── */
+  /* ── ===================================================== ── */
+
+  // Animate header elements on load
+  gsap.from('.brand-mcgi', { opacity: 0, y: -10, duration: 0.5, delay: 0.1, ease: 'power2.out' });
+  gsap.from('.brand-sub', { opacity: 0, y: -8, duration: 0.4, delay: 0.25, ease: 'power2.out' });
+  gsap.from('.logo', { opacity: 0, scale: 0.8, duration: 0.5, delay: 0.15, ease: 'back.out(1.4)' });
+
+  // Start RACS polling after map init
+  setTimeout(startRacsPolling, 500);
+
+  console.log('RACS GPS Tracker v0.03 — animated UI loaded');
+})();
+</script>
+
+<!-- ── In-App Browser Detection ── -->
+<script>
+(function() {
+  'use strict';
+  var ua = navigator.userAgent || navigator.vendor || window.opera;
+  var isInApp = false;
+  if (ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1 || ua.indexOf('Messenger') > -1) { isInApp = true; }
+  if (ua.indexOf('Instagram') > -1) { isInApp = true; }
+  if (ua.indexOf('Line') > -1) { isInApp = true; }
+  if (ua.indexOf('KAKAOTALK') > -1) { isInApp = true; }
+  if (ua.indexOf('NAVER') > -1) { isInApp = true; }
+  if (window.navigator.standalone) { isInApp = false; }
+
+  var iabOverlay = document.getElementById('iabOverlay');
+  var iabOpenBtn = document.getElementById('iabOpenBtn');
+  var iabDismissBtn = document.getElementById('iabDismissBtn');
+  var currentUrl = window.location.href;
+
+  if (isInApp && iabOverlay) {
+    iabOverlay.classList.add('visible');
+    // Animate the IAB box
+    var box = iabOverlay.querySelector('.iab-box');
+    if (box) {
+      box.style.transform = 'scale(0.9) translateY(20px)';
+      box.style.opacity = '0';
+      setTimeout(function() {
+        box.style.transform = 'scale(1) translateY(0)';
+        box.style.opacity = '1';
+      }, 50);
+    }
+
+    iabOpenBtn.addEventListener('click', function() {
+      var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+      var isAndroid = /Android/.test(ua);
+      if (isIOS) {
+        window.location.href = 'x-safari-' + currentUrl;
+        setTimeout(function() {
+          window.location.href = 'googlechrome://' + currentUrl.replace(/^https?:\/\//, '');
+        }, 500);
+      } else if (isAndroid) {
+        window.location.href = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;end';
+      }
+    });
+
+    iabDismissBtn.addEventListener('click', function() {
+      iabOverlay.classList.remove('visible');
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
