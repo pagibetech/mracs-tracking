@@ -7,10 +7,10 @@
 ## Current Status
 
 - **Phase:** Adopted — establish baseline verification
-- **Active branch:** main
+- **Active branch:** codex/dres-icm-20260915
 - **Active worktree:** /Users/macbookm1max321tb/A_Design/A_Coding/A_RACS_Tracker/centralized/mracs-tracking
 - **Current task:** Establish baseline verification
-- **Last verified commit:** 3a16e71
+- **Last verified commit:** 2d08f6c
 - **Last test result:** not run (adoption baseline); test command: (none detected)
 
 ## Known Issues
